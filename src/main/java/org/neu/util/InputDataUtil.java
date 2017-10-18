@@ -3,6 +3,10 @@ package org.neu.util;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.neu.data.FlightData;
 
 /**
  * @author Bhanu, Joyal, Jiangtao
@@ -10,14 +14,18 @@ import org.apache.commons.lang.StringUtils;
 public class InputDataUtil {
 
   private static final int FLIGHT_DELAY_FACTOR = 4;
+  private static final short MAX_FIELDS = 110;
   public static Map<String, Integer> csvColumnMap = new HashMap<>();
 
   /*Initializes map containing CSV Column Mapping*/
   public static void initCsvColumnMap() {
     csvColumnMap.put("year", 0); //YEAR
     csvColumnMap.put("month", 2); //MONTH
-    csvColumnMap.put("airlineID", 7);//AIRLINE_ID
+    csvColumnMap.put("dayOfMonth", 3); //DAY_OF_MONTH
+    csvColumnMap.put("dayOfWeek", 4); //DAY_OF_WEEK
     csvColumnMap.put("uniqueCarrier", 6);//UNIQUE_CARRIER
+    csvColumnMap.put("airlineID", 7);//AIRLINE_ID
+    csvColumnMap.put("flightId", 10);//FL_NUM
     csvColumnMap.put("airportID", 11);//ORIGIN_AIRPORT_ID
     csvColumnMap.put("airportSeqID", 12);//ORIGIN_AIRPORT_SEQ_ID
     csvColumnMap.put("origin", 14);//ORIGIN
@@ -31,6 +39,7 @@ public class InputDataUtil {
     csvColumnMap.put("wac", 28);//DEST_WAC
     csvColumnMap.put("crsDepTime", 29);//CRS_DEP_TIME
     csvColumnMap.put("depTime", 30);//DEP_TIME
+    csvColumnMap.put("depDelayNew", 32);//DEP_DELAY_NEW
     csvColumnMap.put("crsArrTime", 40);//CRS_ARR_TIME
     csvColumnMap.put("arrTime", 41);//ARR_TIME
     csvColumnMap.put("arrDelay", 42);//ARR_Delay
@@ -41,32 +50,64 @@ public class InputDataUtil {
     csvColumnMap.put("actualElapsedTime", 51);//ActualElapsedTime
   }
 
-  /**
-   * @return True if the record is valid.
-   */
-  public static boolean isValidRecord(String[] record) {
-    return ifFieldsAreNotEmpty(record)
-        && validateTimes(record)
-        && isPositive(record);
+  public static FlightData getFlightData(Text value) throws NumberFormatException {
+    CSVRecord d = new CSVRecord(value.toString());
+    FlightData fd = null;
+
+    if (MAX_FIELDS == d.fieldCount &&
+        ifFieldsAreNotEmpty(d) &&
+        validateTimes(d) && isPositive(d)) {
+
+      fd = new FlightData();
+      fd.setYear(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("year")))));
+      fd.setMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("month")))));
+      fd.setDayOfWeek(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfWeek")))));
+      fd.setDayOfMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfMonth")))));
+      fd.setHourOfDay(new IntWritable()); //TODO
+      fd.setFlightId(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("flightId")))));
+      fd.setCarrier(new Text(d.get(csvColumnMap.get("uniqueCarrier"))));
+      fd.setOrigin(new Text(d.get(csvColumnMap.get("origin"))));
+      fd.setDest(new Text(d.get(csvColumnMap.get("destination"))));
+      fd.setSchDepTime(new Text(d.get(csvColumnMap.get("crsDepTime"))));
+      fd.setActDepTime(new Text(d.get(csvColumnMap.get("depTime"))));
+      fd.setSchArrTime(new Text(d.get(csvColumnMap.get("crsArrTime"))));
+      fd.setActArrTime(new Text(d.get(csvColumnMap.get("arrTime"))));
+      fd.setArrDelay(getDelayMinutes(d, "arrDelayMinutes"));
+      fd.setDepDelay(getDelayMinutes(d, "depDelayNew"));
+      fd.setSchElapsedTime(new Text(d.get(csvColumnMap.get("crsElapsedTime"))));
+      fd.setActElapsedTime(new Text(d.get(csvColumnMap.get("actualElapsedTime"))));
+    }
+
+    return fd;
+  }
+
+  private static FloatWritable getDelayMinutes(CSVRecord d, String actMinutes) {
+    Float delay;
+    if (Integer.parseInt(d.get(csvColumnMap.get("cancelled"))) == 1) {
+      delay = 4F;
+    } else {
+      delay = Float.parseFloat(d.get(csvColumnMap.get(actMinutes))) /
+          Float.parseFloat(d.get(csvColumnMap.get("crsElapsedTime")));
+    }
+    return new FloatWritable(delay);
   }
 
   /**
-   * @return False if any of the field is empty
+   * @return true if all above parameters are greater than 0, false otherwise
    */
-  private static boolean ifFieldsAreNotEmpty(String[] record) {
-    for (int i : csvColumnMap.values()) {
-      if (StringUtils.isEmpty(record[i])) {
-        return false;
-      }
-    }
-    return true;
+  private static boolean isPositive(CSVRecord d) {
+    return Integer.parseInt(d.get(csvColumnMap.get("airportID"))) > 0
+        && Integer.parseInt(d.get(csvColumnMap.get("airportSeqID"))) > 0
+        && Integer.parseInt(d.get(csvColumnMap.get("cityMarketID"))) > 0
+        && Integer.parseInt(d.get(csvColumnMap.get("stateFips"))) > 0
+        && Integer.parseInt(d.get(csvColumnMap.get("wac"))) > 0;
   }
 
   /**
    * @return Calculates timezone and checks if timezone mod 60 is zero. If it is zero returns true,
    * false otherwise.
    */
-  private static boolean validateTimes(String[] record) {
+  private static boolean validateTimes(CSVRecord d) {
     int timeZone;
     int crsArrTime;
     int crsDepTime;
@@ -76,11 +117,11 @@ public class InputDataUtil {
 
     try {
 
-      crsArrTime = Integer.parseInt(record[csvColumnMap.get("crsArrTime")]);
-      crsDepTime = Integer.parseInt(record[csvColumnMap.get("crsDepTime")]);
-      crsElapsedTime = Integer.parseInt(record[csvColumnMap.get("crsElapsedTime")]);
-      arrDelay = (int) Float.parseFloat(record[csvColumnMap.get("arrDelay")]);
-      arrDelayMinutes = (int) Float.parseFloat(record[csvColumnMap.get("arrDelayMinutes")]);
+      crsArrTime = Integer.parseInt(d.get(csvColumnMap.get("crsArrTime")));
+      crsDepTime = Integer.parseInt(d.get(csvColumnMap.get("crsDepTime")));
+      crsElapsedTime = Integer.parseInt(d.get(csvColumnMap.get("crsElapsedTime")));
+      arrDelay = (int) Float.parseFloat(d.get(csvColumnMap.get("arrDelay")));
+      arrDelayMinutes = (int) Float.parseFloat(d.get(csvColumnMap.get("arrDelayMinutes")));
 
       // CRSArrTime and CRSDepTime and CRSElapsedTime should not be zero
       if (crsArrTime == 0 || crsDepTime == 0 || crsElapsedTime == 0) {
@@ -96,11 +137,11 @@ public class InputDataUtil {
       }
 
       // For flights that are not Cancelled:
-      if (Integer.parseInt(record[csvColumnMap.get("cancelled")]) != 1) {
+      if (Integer.parseInt(d.get(csvColumnMap.get("cancelled"))) != 1) {
         //ArrTime -  DepTime - ActualElapsedTime - timeZone should be zero
-        if (Integer.parseInt(record[csvColumnMap.get("arrTime")]) - Integer
-            .parseInt(record[csvColumnMap.get("depTime")]) - Integer
-            .parseInt(record[csvColumnMap.get("actualElapsedTime")]) - timeZone != 0) {
+        if (Integer.parseInt(d.get(csvColumnMap.get("arrTime"))) - Integer
+            .parseInt(d.get(csvColumnMap.get("depTime"))) - Integer
+            .parseInt(d.get(csvColumnMap.get("actualElapsedTime"))) - timeZone != 0) {
           return false;
         }
 
@@ -113,7 +154,7 @@ public class InputDataUtil {
         }
         //if ArrDelayMinutes >= 15 then ArrDel15 should be true
         if (arrDelayMinutes >= 15) {
-          return Boolean.parseBoolean(record[csvColumnMap.get("arrDel15")]);
+          return Boolean.parseBoolean(d.get(csvColumnMap.get("arrDel15")));
         }
       }
 
@@ -122,17 +163,19 @@ public class InputDataUtil {
       return false;
     }
     return true;
+
   }
 
   /**
-   * @return true if all above parameters are greater than 0, false otherwise
+   * @return False if any of the field is empty
    */
-  private static boolean isPositive(String[] record) {
-    return Integer.parseInt(record[csvColumnMap.get("airportID")]) > 0
-        && Integer.parseInt(record[csvColumnMap.get("airportSeqID")]) > 0
-        && Integer.parseInt(record[csvColumnMap.get("cityMarketID")]) > 0
-        && Integer.parseInt(record[csvColumnMap.get("stateFips")]) > 0
-        && Integer.parseInt(record[csvColumnMap.get("wac")]) > 0;
+  private static boolean ifFieldsAreNotEmpty(CSVRecord d) {
+    for (int i : csvColumnMap.values()) {
+      if (StringUtils.isEmpty(d.get(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
 }

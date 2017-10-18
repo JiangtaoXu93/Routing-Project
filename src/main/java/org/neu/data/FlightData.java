@@ -30,8 +30,8 @@ public class FlightData implements Writable {
   private Text actDepTime;//DEP_TIME (local time: hhmm)
   private Text schArrTime;//CRS_ARR_TIME (local time: hhmm)
   private Text actArrTime;//ARR_TIME (local time: hhmm)
-  private FloatWritable arrDelay;//ARR_DELAY_NEW (mm)
-  private FloatWritable depDelay;//DEP_DELAY_NEW (mm)
+  private FloatWritable arrDelay;//NORMALISED_DELAY
+  private FloatWritable depDelay;//NORMALISED_DELAY
   private Text schElapsedTime;//CRS_ELAPSED_TIME (hhmm)
   private Text actElapsedTime;//ELAPSED_TIME (hhmm)
 
