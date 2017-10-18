@@ -8,8 +8,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
+import org.neu.data.FlightData;
+import org.neu.data.RouteKey;
 import org.neu.mapper.RouteComputeMapper;
-import org.neu.reducer.RouteComputeReducer;
 
 public class RouteComputeJob extends Configured implements Tool
 {
@@ -24,14 +25,15 @@ public class RouteComputeJob extends Configured implements Tool
 
     FileInputFormat.addInputPath(job, new Path(args[2]));
     FileOutputFormat.setOutputPath(job, new Path(args[3] + "/route"));
+    job.addCacheFile(new Path(args[1] + "/query.csv").toUri());
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
 
     job.setMapperClass(RouteComputeMapper.class);
-    job.setReducerClass(RouteComputeReducer.class);
+//    job.setReducerClass(RouteComputeReducer.class);
 
-
-    job.addCacheFile(new Path(args[3] + "/query/query").toUri());
+    job.setMapOutputKeyClass(RouteKey.class);
+    job.setMapOutputValueClass(FlightData.class);
 
 
 

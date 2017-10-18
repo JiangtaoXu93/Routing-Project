@@ -11,7 +11,7 @@ import org.neu.data.FlightData;
 /**
  * @author Bhanu, Joyal, Jiangtao
  */
-public class InputDataUtil {
+public class DataUtil {
 
   private static final int FLIGHT_DELAY_FACTOR = 4;
   private static final short MAX_FIELDS = 110;
