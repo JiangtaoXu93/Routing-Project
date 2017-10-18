@@ -239,11 +239,46 @@ public class FlightData implements Writable {
 
   @Override
   public void write(DataOutput dataOutput) throws IOException {
+    legType.write(dataOutput);
+    year.write(dataOutput);
+    month.write(dataOutput);
+    dayOfWeek.write(dataOutput);
+    dayOfMonth.write(dataOutput);
+    hourOfDay.write(dataOutput);
+    flightId.write(dataOutput);
+    carrier.write(dataOutput);
+    origin.write(dataOutput);
+    dest.write(dataOutput);
+    schDepTime.write(dataOutput);
+    actDepTime.write(dataOutput);
+    schArrTime.write(dataOutput);
+    actArrTime.write(dataOutput);
+    arrDelay.write(dataOutput);
+    depDelay.write(dataOutput);
+    schElapsedTime.write(dataOutput);
+    actElapsedTime.write(dataOutput);
 
   }
 
   @Override
   public void readFields(DataInput dataInput) throws IOException {
-
+    legType.readFields(dataInput);
+    year.readFields(dataInput);
+    month.readFields(dataInput);
+    dayOfWeek.readFields(dataInput);
+    dayOfMonth.readFields(dataInput);
+    hourOfDay.readFields(dataInput);
+    flightId.readFields(dataInput);
+    carrier.readFields(dataInput);
+    origin.readFields(dataInput);
+    dest.readFields(dataInput);
+    schDepTime.readFields(dataInput);
+    actDepTime.readFields(dataInput);
+    schArrTime.readFields(dataInput);
+    actArrTime.readFields(dataInput);
+    arrDelay.readFields(dataInput);
+    depDelay.readFields(dataInput);
+    schElapsedTime.readFields(dataInput);
+    actElapsedTime.readFields(dataInput);
   }
 }
