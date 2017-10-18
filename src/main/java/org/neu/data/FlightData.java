@@ -10,6 +10,7 @@ import org.apache.hadoop.io.Writable;
 
 public class FlightData implements Writable {
 
+  public static final String SEP_COMMA = ",";
   /**
    * LegType is the flight type in one complete route.
    * If the route is A->C->B
@@ -76,21 +77,82 @@ public class FlightData implements Writable {
         new Text(origin),
         new Text(dest),
         new Text(schDepTime),
-        new Text(actArrTime),
         new Text(actDepTime),
         new Text(schArrTime),
+        new Text(actArrTime),
         new FloatWritable(arrDelay),
         new FloatWritable(depDelay),
         new Text(schElapsedTime),
         new Text(actElapsedTime));
   }
 
+  public FlightData(FlightData fd) {
+    this(new IntWritable(fd.getLegType().get()),
+        new IntWritable(fd.getYear().get()),
+        new IntWritable(fd.getMonth().get()),
+        new IntWritable(fd.getDayOfWeek().get()),
+        new IntWritable(fd.getDayOfMonth().get()),
+        new IntWritable(fd.getHourOfDay().get()),
+        new IntWritable(fd.getFlightId().get()),
+        new Text(fd.getCarrier().toString()),
+        new Text(fd.getOrigin().toString()),
+        new Text(fd.getDest().toString()),
+        new Text(fd.getSchDepTime().toString()),
+        new Text(fd.getActDepTime().toString()),
+        new Text(fd.getSchArrTime().toString()),
+        new Text(fd.getActArrTime().toString()),
+        new FloatWritable(fd.getArrDelay().get()),
+        new FloatWritable(fd.getDepDelay().get()),
+        new Text(fd.getSchElapsedTime().toString()),
+        new Text(fd.getActElapsedTime().toString()));
+  }
 
   public FlightData() {
-  /*  this(new IntWritable(), new IntWritable(), new IntWritable(), new IntWritable(),
-        new IntWritable(), new IntWritable(), new IntWritable(), new Text(), new Text(), new Text(),
-        new Text(), new Text(), new Text(), new Text(), new Text(), new Text(), new Text(),
-        new Text());*/
+    this(new IntWritable(), new IntWritable(), new IntWritable(), new IntWritable(),
+        new IntWritable(), new IntWritable(), new IntWritable(), new Text(),
+        new Text(), new Text(), new Text(), new Text(), new Text(), new Text(),
+        new FloatWritable(), new FloatWritable(), new Text(), new Text());
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(legType);
+    sb.append(SEP_COMMA);
+    sb.append(year);
+    sb.append(SEP_COMMA);
+    sb.append(month);
+    sb.append(SEP_COMMA);
+    sb.append(dayOfWeek);
+    sb.append(SEP_COMMA);
+    sb.append(dayOfMonth);
+    sb.append(SEP_COMMA);
+    sb.append(hourOfDay);
+    sb.append(SEP_COMMA);
+    sb.append(flightId);
+    sb.append(SEP_COMMA);
+    sb.append(carrier);
+    sb.append(SEP_COMMA);
+    sb.append(origin);
+    sb.append(SEP_COMMA);
+    sb.append(dest);
+    sb.append(SEP_COMMA);
+    sb.append(schDepTime);
+    sb.append(SEP_COMMA);
+    sb.append(actDepTime);
+    sb.append(SEP_COMMA);
+    sb.append(schArrTime);
+    sb.append(SEP_COMMA);
+    sb.append(actArrTime);
+    sb.append(SEP_COMMA);
+    sb.append(arrDelay);
+    sb.append(SEP_COMMA);
+    sb.append(depDelay);
+    sb.append(SEP_COMMA);
+    sb.append(schElapsedTime);
+    sb.append(SEP_COMMA);
+    sb.append(actElapsedTime);
+    return sb.toString();
   }
 
   public IntWritable getLegType() {

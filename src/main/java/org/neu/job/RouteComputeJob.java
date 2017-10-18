@@ -9,11 +9,13 @@ import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.neu.data.FlightData;
+import org.neu.data.RouteData;
 import org.neu.data.RouteKey;
 import org.neu.mapper.RouteComputeMapper;
+import org.neu.reducer.RouteComputeReducer;
 
-public class RouteComputeJob extends Configured implements Tool
-{
+public class RouteComputeJob extends Configured implements Tool {
+
   private static String OUTPUT_SEPARATOR = "mapreduce.output.textoutputformat.separator";
 
 
@@ -30,13 +32,13 @@ public class RouteComputeJob extends Configured implements Tool
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
 
     job.setMapperClass(RouteComputeMapper.class);
-//    job.setReducerClass(RouteComputeReducer.class);
+    job.setReducerClass(RouteComputeReducer.class);
 
     job.setMapOutputKeyClass(RouteKey.class);
     job.setMapOutputValueClass(FlightData.class);
+    job.setOutputKeyClass(RouteKey.class);
+    job.setOutputValueClass(RouteData.class);
 
-
-
-
-    return job.waitForCompletion(true) ? 0 : 1;  }
+    return job.waitForCompletion(true) ? 0 : 1;
+  }
 }

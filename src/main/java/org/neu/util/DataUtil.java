@@ -53,31 +53,32 @@ public class DataUtil {
   public static FlightData getFlightData(Text value) throws NumberFormatException {
     CSVRecord d = new CSVRecord(value.toString());
     FlightData fd = null;
-
-    if (MAX_FIELDS == d.fieldCount &&
-        ifFieldsAreNotEmpty(d) &&
-        validateTimes(d) && isPositive(d)) {
-
-      fd = new FlightData();
-      fd.setYear(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("year")))));
-      fd.setMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("month")))));
-      fd.setDayOfWeek(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfWeek")))));
-      fd.setDayOfMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfMonth")))));
-      fd.setHourOfDay(new IntWritable()); //TODO
-      fd.setFlightId(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("flightId")))));
-      fd.setCarrier(new Text(d.get(csvColumnMap.get("uniqueCarrier"))));
-      fd.setOrigin(new Text(d.get(csvColumnMap.get("origin"))));
-      fd.setDest(new Text(d.get(csvColumnMap.get("destination"))));
-      fd.setSchDepTime(new Text(d.get(csvColumnMap.get("crsDepTime"))));
-      fd.setActDepTime(new Text(d.get(csvColumnMap.get("depTime"))));
-      fd.setSchArrTime(new Text(d.get(csvColumnMap.get("crsArrTime"))));
-      fd.setActArrTime(new Text(d.get(csvColumnMap.get("arrTime"))));
-      fd.setArrDelay(getDelayMinutes(d, "arrDelayMinutes"));
-      fd.setDepDelay(getDelayMinutes(d, "depDelayNew"));
-      fd.setSchElapsedTime(new Text(d.get(csvColumnMap.get("crsElapsedTime"))));
-      fd.setActElapsedTime(new Text(d.get(csvColumnMap.get("actualElapsedTime"))));
+    try {
+      if (MAX_FIELDS == d.fieldCount &&
+          ifFieldsAreNotEmpty(d) &&
+          validateTimes(d) && isPositive(d)) {
+        fd = new FlightData();
+        fd.setYear(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("year")))));
+        fd.setMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("month")))));
+        fd.setDayOfWeek(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfWeek")))));
+        fd.setDayOfMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfMonth")))));
+        fd.setHourOfDay(new IntWritable()); //TODO
+        fd.setFlightId(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("flightId")))));
+        fd.setCarrier(new Text(d.get(csvColumnMap.get("uniqueCarrier"))));
+        fd.setOrigin(new Text(d.get(csvColumnMap.get("origin"))));
+        fd.setDest(new Text(d.get(csvColumnMap.get("destination"))));
+        fd.setSchDepTime(new Text(d.get(csvColumnMap.get("crsDepTime"))));
+        fd.setActDepTime(new Text(d.get(csvColumnMap.get("depTime"))));
+        fd.setSchArrTime(new Text(d.get(csvColumnMap.get("crsArrTime"))));
+        fd.setActArrTime(new Text(d.get(csvColumnMap.get("arrTime"))));
+        fd.setArrDelay(getDelayMinutes(d, "arrDelayMinutes"));
+        fd.setDepDelay(getDelayMinutes(d, "depDelayNew"));
+        fd.setSchElapsedTime(new Text(d.get(csvColumnMap.get("crsElapsedTime"))));
+        fd.setActElapsedTime(new Text(d.get(csvColumnMap.get("actualElapsedTime"))));
+      }
+    } catch (NumberFormatException nfe) {
+      // Do Nothing
     }
-
     return fd;
   }
 
