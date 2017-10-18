@@ -36,7 +36,6 @@ public class RoutePrediction {
     BenchmarkUtil.writeBenchmarks(bmdList, benchmarkLoc);
   }
 
-  //Driver method to run FlightDelayJob
   private static void runJobs(String[] args, Configuration conf, BenchmarkData bmd)
       throws Exception {
     int result;
@@ -44,15 +43,15 @@ public class RoutePrediction {
     long d2;
     cleanOutDir(args[3], conf);
 
-    //FlightDelayJob
+    //RouteComputeJob
     d1 = System.nanoTime();
     System.out.println(String
-        .format(">>>>>> Running FlightDelayJob [Iteration=%s, K=%s]", bmd.getIteration(),
-            bmd.getK()));
+        .format(">>>>>> Running RouteComputeJob [Iteration=%s, Query=%s]", bmd.getIteration(),
+            bmd.getQueryFile()));
     result = ToolRunner.run(conf, new RouteComputeJob(), args);
     if (0 != result) {
-      System.out.println(">>>>>> FlightDelayJob failed.");
-      throw new RuntimeException("FlightDelayJob failed.");
+      System.out.println(">>>>>> RouteComputeJob failed.");
+      throw new RuntimeException("RouteComputeJob failed.");
     }
     d2 = System.nanoTime();
     bmd.setFlightDelayJob((double) ((d2 - d1) / 1000000));

@@ -9,17 +9,17 @@ public class BenchmarkData {
 
   private int threadCount;
   private int iteration;
-  private String k;
+  private String queryFile;
   private String input;
   private Date dateTime;
   private Double totalExecutionTime;
   private Double flightDelayJob;
 
-  public BenchmarkData(int threadCount, int iteration, String k, Double totalExecutionTime,
+  public BenchmarkData(int threadCount, int iteration, String queryFile, Double totalExecutionTime,
       String input, Date dateTime, Double flightDelayJob) {
     this.threadCount = threadCount;
     this.iteration = iteration;
-    this.k = k;
+    this.queryFile = queryFile;
     this.totalExecutionTime = totalExecutionTime;
     this.input = input;
     this.flightDelayJob = flightDelayJob;
@@ -69,12 +69,12 @@ public class BenchmarkData {
     this.input = input;
   }
 
-  public String getK() {
-    return k;
+  public String getQueryFile() {
+    return queryFile;
   }
 
-  public void setK(String k) {
-    this.k = k;
+  public void setQueryFile(String queryFile) {
+    this.queryFile = queryFile;
   }
 
   public Double getFlightDelayJob() {

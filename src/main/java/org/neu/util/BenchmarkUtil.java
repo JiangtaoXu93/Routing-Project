@@ -24,7 +24,7 @@ public class BenchmarkUtil {
     tb.setIteration(iteration);
     tb.setDateTime(new Date());
     tb.setInput(input);
-    tb.setK(k);
+    tb.setQueryFile(k);
     return tb;
   }
 
@@ -70,7 +70,7 @@ public class BenchmarkUtil {
     row.append(",");
     row.append(bmd.getThreadCount());
     row.append(",");
-    row.append(bmd.getK());
+    row.append(bmd.getQueryFile());
     row.append(",");
     row.append(bmd.getIteration());
     row.append(",");

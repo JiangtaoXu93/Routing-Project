@@ -5,7 +5,7 @@ http://janvitek.org/pdpmr/f17/task-a5-routes.html
 ## Code Structure
 
 - `Driver`  : `org.neu.FlightPerformance`
-  - Arguments `<iterations> <k> <input> <output> <report-loc>`
+  - Arguments `<iterations> <queryFile> <input> <output> <report-loc>`
 - `Job` :  `org.neu.job.FlightDelayJob`
 
 ## Hadoop Cluster Config

@@ -7,7 +7,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * @author Bhanu, Joyal, Jiangtao
  */
-public class DataSanity {
+public class InputDataUtil {
 
   private static final int FLIGHT_DELAY_FACTOR = 4;
   public static Map<String, Integer> csvColumnMap = new HashMap<>();

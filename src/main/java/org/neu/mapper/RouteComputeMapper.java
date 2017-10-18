@@ -1,10 +1,12 @@
 package org.neu.mapper;
 
-import static org.neu.util.DataSanity.csvColumnMap;
-import static org.neu.util.DataSanity.isValidRecord;
+import static org.neu.util.InputDataUtil.csvColumnMap;
+import static org.neu.util.InputDataUtil.isValidRecord;
 
 import com.opencsv.CSVParser;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -15,7 +17,15 @@ import org.neu.data.RouteKey;
 public class RouteComputeMapper extends
     Mapper<LongWritable, Text, RouteKey, FlightData> {
 
+  private static Set<String> sourceSet = new HashSet<>();
+  private static Set<String> destinationSet = new HashSet<>();
+  private static int year;
   private static CSVParser csvParser = new CSVParser();
+
+  @Override
+  protected void setup(Context context) throws IOException, InterruptedException {
+
+  }
 
   @Override
   protected void map(LongWritable key, Text value, Context context)

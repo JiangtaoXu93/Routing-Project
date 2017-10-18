@@ -29,7 +29,11 @@ public class RouteComputeJob extends Configured implements Tool
 
     job.setMapperClass(RouteComputeMapper.class);
     job.setReducerClass(RouteComputeReducer.class);
-    job.setNumReduceTasks(1);
+
+
+    job.addCacheFile(new Path(args[3] + "/query/query").toUri());
+
+
 
 
     return job.waitForCompletion(true) ? 0 : 1;  }
