@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ToolRunner;
 import org.neu.data.BenchmarkData;
 import org.neu.job.RouteComputeJob;
+import org.neu.job.RoutePredictionJob;
 import org.neu.util.BenchmarkUtil;
 
 public class RoutePrediction {
@@ -55,6 +56,12 @@ public class RoutePrediction {
     }
     d2 = System.nanoTime();
     bmd.setFlightDelayJob((double) ((d2 - d1) / 1000000));
+
+
+
+    //ML PredictionUtil
+    result = ToolRunner.run(conf, new RoutePredictionJob(), args);
+
   }
 
   /**
