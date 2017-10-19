@@ -108,7 +108,7 @@ public class RouteComputeMapper extends
           context.write(rk, fd);
         }
 
-        //Emit Test LegTow
+        //Emit Test LegTwo
         if (StringUtils.equals(queryDes, fd.getDest().toString())) {
           fd.setLegType(new IntWritable(2));
           RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
