@@ -6,6 +6,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.neu.data.FlightData;
@@ -27,6 +28,14 @@ public class RouteComputeJob extends Configured implements Tool {
 
     FileInputFormat.addInputPath(job, new Path(args[2]));
     FileOutputFormat.setOutputPath(job, new Path(args[3] + "/route"));
+
+    MultipleOutputs.addNamedOutput(job, "train", TextOutputFormat.class,
+        RouteKey.class, RouteData.class);
+    MultipleOutputs.addNamedOutput(job, "test", TextOutputFormat.class,
+        RouteKey.class, RouteData.class);
+
+    LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+
     job.addCacheFile(new Path(args[1] + "/query.csv").toUri());
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);

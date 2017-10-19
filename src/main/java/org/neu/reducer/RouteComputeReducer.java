@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.neu.data.FlightData;
 import org.neu.data.RouteData;
 import org.neu.data.RouteKey;
@@ -16,6 +17,12 @@ import org.neu.data.RouteKey;
 public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey, RouteData> {
 
   private static SimpleDateFormat hopTimeFormatter = new SimpleDateFormat("yyyyMMddHHmm");
+  private MultipleOutputs mos;
+
+  @Override
+  protected void setup(Context context) throws IOException, InterruptedException {
+    mos = new MultipleOutputs<>(context);
+  }
 
   @Override
   protected void reduce(RouteKey key, Iterable<FlightData> values, Context context)
@@ -24,6 +31,11 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
     List<FlightData> legTwoFlights = new ArrayList<>();
     partitionFlights(values, legOneFlights, legTwoFlights);
     computeAndEmitRoutes(key, context, legOneFlights, legTwoFlights);
+  }
+
+  @Override
+  protected void cleanup(Context context) throws IOException, InterruptedException {
+    mos.close();
   }
 
   private void computeAndEmitRoutes(RouteKey key, Context context, List<FlightData> legOneFlights,
@@ -62,9 +74,10 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
       throws IOException, InterruptedException {
     //Add Label to Train Route
     if (1 == key.getType().get()) {
-      context.write(key, new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
+      mos.write("train", key,
+          new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     } else {
-      context.write(key, new RouteData(lOne, lTwo, new IntWritable()));
+      mos.write("test", key, new RouteData(lOne, lTwo, new IntWritable()));
     }
   }
 
