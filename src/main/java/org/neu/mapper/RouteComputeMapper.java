@@ -63,16 +63,21 @@ public class RouteComputeMapper extends
     String line;
     while ((line = bufferedReader.readLine()) != null) {
       String[] values = line.split(",");
+
+      /*Add Year*/
       yearSet.add(Integer.valueOf(values[0]));
 
+      /*Load SD MAP*/
       Map<String, Integer> dMap = sdMap.getOrDefault(values[3], new HashMap<>());
       dMap.put(values[4], dMap.getOrDefault(values[4], 0) + 1);
       sdMap.put(values[3], dMap);
 
+      /*Load DS MAP*/
       Map<String, Integer> sMap = dsMap.getOrDefault(values[4], new HashMap<>());
       sMap.put(values[3], sMap.getOrDefault(values[3], 0) + 1);
       dsMap.put(values[4], sMap);
 
+      /*Add Query*/
       queryList.add(values);
     }
     inputStreamReader.close();
@@ -92,7 +97,7 @@ public class RouteComputeMapper extends
   private void emitTestData(Context context, FlightData fd)
       throws IOException, InterruptedException {
     for (String[] query : queryList) {
-      String fightDate = fd.getYear().toString()
+      String flightDate = fd.getYear().toString()
           + StringUtils.leftPad(fd.getMonth().toString(), 2, '0')
           + StringUtils.leftPad(fd.getDayOfMonth().toString(), 2, '0');
       String queryDate = query[0] + query[1] + query[2];
@@ -100,11 +105,11 @@ public class RouteComputeMapper extends
       String queryDes = query[4];
 
       //Emit Test LegOne
-      if (StringUtils.equals(queryDate, fightDate)) {
+      if (StringUtils.equals(queryDate, flightDate)) {
         if (StringUtils.equals(queryOrigin, fd.getOrigin().toString())) {
           fd.setLegType(new IntWritable(1));
           RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(queryDes),
-              new IntWritable(2), new Text(fightDate));
+              new IntWritable(2), new Text(flightDate));
           context.write(rk, fd);
         }
 
@@ -112,7 +117,7 @@ public class RouteComputeMapper extends
         if (StringUtils.equals(queryDes, fd.getDest().toString())) {
           fd.setLegType(new IntWritable(2));
           RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
-              new IntWritable(2), new Text(fightDate));
+              new IntWritable(2), new Text(flightDate));
           context.write(rk, fd);
         }
       }
@@ -121,6 +126,7 @@ public class RouteComputeMapper extends
 
   private void emitTrainData(Context context, FlightData fd)
       throws IOException, InterruptedException {
+   //TODO: Change (computeYear - 25) -> (computeYear - 5)
     if (fd.getYear().get() >= (computeYear - 25) && fd.getYear().get() < computeYear) {
       writeLegOneTrainFlight(context, fd);
       writeLegTwoTrainFlight(context, fd);

@@ -10,6 +10,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <hadoop.version>2.8.1</hadoop.version>
+    <weka.version>3.8.1</weka.version>
   </properties>
   <build>
     <sourceDirectory>src/main/java</sourceDirectory>
@@ -96,7 +97,23 @@
     <dependency>
       <groupId>com.github.sanity</groupId>
       <artifactId>quickml</artifactId>
-      <version>10.16</version>
+      <version>0.10.9</version>
+      <!--<scope>system</scope>-->
+      <!--<systemPath>${project.basedir}/lib/quickml-10.16.jar</systemPath>-->
+    </dependency>
+    <!--WEKA-->
+    <!--<dependency>-->
+      <!--<groupId>nz.ac.waikato.cms.weka</groupId>-->
+      <!--<artifactId>weka-stable</artifactId>-->
+      <!--<version>${weka.version}</version>-->
+    <!--</dependency>-->
+    <!--JAVA-ML-->
+    <dependency>
+      <groupId>net.sf</groupId>
+      <artifactId>javaml</artifactId>
+      <version>0.1.7</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/javaml-0.1.7.jar</systemPath>
     </dependency>
   </dependencies>
 </project>

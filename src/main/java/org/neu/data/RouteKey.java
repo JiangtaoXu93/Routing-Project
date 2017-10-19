@@ -8,7 +8,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 
-public class RouteKey implements WritableComparable<RouteKey> {
+public class  RouteKey implements WritableComparable<RouteKey> {
 
   private Text source;
   private Text hop;

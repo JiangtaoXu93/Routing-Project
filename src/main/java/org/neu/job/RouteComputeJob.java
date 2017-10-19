@@ -2,6 +2,7 @@ package org.neu.job;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -35,6 +36,7 @@ public class RouteComputeJob extends Configured implements Tool {
         RouteKey.class, RouteData.class);
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+
 
     job.addCacheFile(new Path(args[1] + "/query.csv").toUri());
 
