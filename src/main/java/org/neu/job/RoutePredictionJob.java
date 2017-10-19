@@ -1,3 +1,4 @@
+/*
 package org.neu.job;
 
 import java.util.HashMap;
@@ -26,3 +27,4 @@ public class RoutePredictionJob extends Configured implements Tool {
     return featureMap;
   }
 }
+*/

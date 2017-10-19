@@ -9,7 +9,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ToolRunner;
 import org.neu.data.BenchmarkData;
 import org.neu.job.RouteComputeJob;
-import org.neu.job.RoutePredictionJob;
 import org.neu.util.BenchmarkUtil;
 
 public class RoutePrediction {
@@ -60,7 +59,7 @@ public class RoutePrediction {
 
 
     //ML PredictionUtil
-    result = ToolRunner.run(conf, new RoutePredictionJob(), args);
+//    result = ToolRunner.run(conf, new RoutePredictionJob(), args);
 
   }
 
