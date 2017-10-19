@@ -108,12 +108,12 @@
       <!--<version>${weka.version}</version>-->
     <!--</dependency>-->
     <!--JAVA-ML-->
-    <dependency>
+    <!--<dependency>
       <groupId>net.sf</groupId>
       <artifactId>javaml</artifactId>
       <version>0.1.7</version>
       <scope>system</scope>
       <systemPath>${project.basedir}/lib/javaml-0.1.7.jar</systemPath>
-    </dependency>
+    </dependency>-->
   </dependencies>
 </project>

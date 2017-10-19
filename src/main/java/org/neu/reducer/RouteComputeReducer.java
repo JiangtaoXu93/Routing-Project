@@ -78,6 +78,8 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
           new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     } else {
       mos.write("test", key, new RouteData(lOne, lTwo, new IntWritable()));
+      mos.write("validate", key,
+          new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     }
   }
 

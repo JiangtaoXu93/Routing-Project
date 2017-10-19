@@ -34,6 +34,8 @@ public class RouteComputeJob extends Configured implements Tool {
         RouteKey.class, RouteData.class);
     MultipleOutputs.addNamedOutput(job, "test", TextOutputFormat.class,
         RouteKey.class, RouteData.class);
+    MultipleOutputs.addNamedOutput(job, "validate", TextOutputFormat.class,
+        RouteKey.class, RouteData.class);
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
 
