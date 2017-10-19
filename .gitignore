@@ -29,3 +29,5 @@ input/i10
 input/all
 .gitignore
 out/
+report/benchmark*
+report/.benchmark*

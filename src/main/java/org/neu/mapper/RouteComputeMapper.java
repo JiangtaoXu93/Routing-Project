@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang.StringUtils;
@@ -27,21 +29,22 @@ public class RouteComputeMapper extends
 
   private static Map<String, Map<String, Integer>> sdMap = new HashMap<>();
   private static Map<String, Map<String, Integer>> dsMap = new HashMap<>();
+  private static List<String[]> queryList = new ArrayList<>();
   private static Set<Integer> yearSet = new HashSet<>();
   private static int computeYear;
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
     DataUtil.initCsvColumnMap();
-    computeQueryData(context);
+    loadQueryData(context);
     computeYear = yearSet.iterator().next();// Assuming we have only one year in all queries
   }
 
-  private void computeQueryData(Context context) throws IOException {
+  private void loadQueryData(Context context) throws IOException {
     if (context.getCacheFiles() != null && context.getCacheFiles().length > 0) {
       URI mappingFileUri = context.getCacheFiles()[0];
       if (mappingFileUri != null) {
-        processQueryData(context.getConfiguration(), mappingFileUri);
+        getQueryData(context.getConfiguration(), mappingFileUri);
       } else {
         System.out.println(">>>>>> NO MAPPING FILE");
       }
@@ -50,7 +53,7 @@ public class RouteComputeMapper extends
     }
   }
 
-  private void processQueryData(Configuration conf, URI mappingFileUri)
+  private void getQueryData(Configuration conf, URI mappingFileUri)
       throws IOException {
     FileSystem fs = FileSystem.get(mappingFileUri, conf);
     FileStatus[] status = fs.listStatus(new Path(mappingFileUri));
@@ -70,6 +73,7 @@ public class RouteComputeMapper extends
       sMap.put(values[3], sMap.getOrDefault(values[3], 0) + 1);
       dsMap.put(values[4], sMap);
 
+      queryList.add(values);
     }
     inputStreamReader.close();
     bufferedReader.close();
@@ -79,32 +83,72 @@ public class RouteComputeMapper extends
   protected void map(LongWritable key, Text value, Context context)
       throws IOException, InterruptedException {
     FlightData fd = DataUtil.getFlightData(value);
-    if (null != fd && fd.getYear().get() >= (computeYear - 5) && fd.getYear().get() < computeYear) {
-      writeLegOneFlight(context, fd);
-      writeLegTwoFlight(context, fd);
+    if (null != fd) {
+      emitTrainData(context, fd);
+      emitTestData(context, fd);
     }
   }
 
-  private void writeLegOneFlight(Context context, FlightData fd)
+  private void emitTestData(Context context, FlightData fd)
       throws IOException, InterruptedException {
-    fd.setLegType(new IntWritable(1));
-    for (Map.Entry<String, Map<String, Integer>> entry : sdMap.entrySet()) {
-      if (StringUtils.equals(entry.getKey(), fd.getOrigin().toString())) {
-        for (String des : entry.getValue().keySet()) {
-          RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(des));
+    for (String[] query : queryList) {
+      String fightDate = fd.getYear().toString()
+          + StringUtils.leftPad(fd.getMonth().toString(), 2, '0')
+          + StringUtils.leftPad(fd.getDayOfMonth().toString(), 2, '0');
+      String queryDate = query[0] + query[1] + query[2];
+      String queryOrigin = query[3];
+      String queryDes = query[4];
+
+      //Emit Test LegOne
+      if (StringUtils.equals(queryDate, fightDate)) {
+        if (StringUtils.equals(queryOrigin, fd.getOrigin().toString())) {
+          fd.setLegType(new IntWritable(1));
+          RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(queryDes),
+              new IntWritable(2), new Text(fightDate));
+          context.write(rk, fd);
+        }
+
+        //Emit Test LegTow
+        if (StringUtils.equals(queryDes, fd.getDest().toString())) {
+          fd.setLegType(new IntWritable(2));
+          RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
+              new IntWritable(2), new Text(fightDate));
           context.write(rk, fd);
         }
       }
     }
   }
 
-  private void writeLegTwoFlight(Context context, FlightData fd)
+  private void emitTrainData(Context context, FlightData fd)
+      throws IOException, InterruptedException {
+    if (fd.getYear().get() >= (computeYear - 25) && fd.getYear().get() < computeYear) {
+      writeLegOneTrainFlight(context, fd);
+      writeLegTwoTrainFlight(context, fd);
+    }
+  }
+
+  private void writeLegOneTrainFlight(Context context, FlightData fd)
+      throws IOException, InterruptedException {
+    fd.setLegType(new IntWritable(1));
+    for (Map.Entry<String, Map<String, Integer>> entry : sdMap.entrySet()) {
+      if (StringUtils.equals(entry.getKey(), fd.getOrigin().toString())) {
+        for (String des : entry.getValue().keySet()) {
+          RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(des),
+              new IntWritable(1), new Text());
+          context.write(rk, fd);
+        }
+      }
+    }
+  }
+
+  private void writeLegTwoTrainFlight(Context context, FlightData fd)
       throws IOException, InterruptedException {
     fd.setLegType(new IntWritable(2));
     for (Map.Entry<String, Map<String, Integer>> entry : dsMap.entrySet()) {
       if (StringUtils.equals(entry.getKey(), fd.getDest().toString())) {
         for (String origin : entry.getValue().keySet()) {
-          RouteKey rk = new RouteKey(new Text(origin), fd.getOrigin(), fd.getDest());
+          RouteKey rk = new RouteKey(new Text(origin), fd.getOrigin(), fd.getDest(),
+              new IntWritable(1), new Text());
           context.write(rk, fd);
         }
       }

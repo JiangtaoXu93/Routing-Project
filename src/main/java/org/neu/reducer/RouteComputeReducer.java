@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.neu.data.FlightData;
 import org.neu.data.RouteData;
@@ -16,18 +17,38 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
 
   private static SimpleDateFormat hopTimeFormatter = new SimpleDateFormat("yyyyMMddHHmm");
 
-
-  @Override
-  protected void setup(Context context) throws IOException, InterruptedException {
-    super.setup(context);
-  }
-
   @Override
   protected void reduce(RouteKey key, Iterable<FlightData> values, Context context)
       throws IOException, InterruptedException {
-    System.out.println(key);
     List<FlightData> legOneFlights = new ArrayList<>();
     List<FlightData> legTwoFlights = new ArrayList<>();
+    partitionFlights(values, legOneFlights, legTwoFlights);
+    computeAndEmitRoutes(key, context, legOneFlights, legTwoFlights);
+  }
+
+  private void computeAndEmitRoutes(RouteKey key, Context context, List<FlightData> legOneFlights,
+      List<FlightData> legTwoFlights) throws IOException, InterruptedException {
+    for (FlightData lOne : legOneFlights) {
+      for (FlightData lTwo : legTwoFlights) {
+        String schLegOneArrTime = getDateTime(lOne.getYear().toString(),
+            lOne.getMonth().toString(),
+            lOne.getDayOfMonth().toString(),
+            lOne.getSchArrTime().toString());
+
+        String schLegTwoDeptTime = getDateTime(lTwo.getYear().toString(),
+            lTwo.getMonth().toString(),
+            lTwo.getDayOfMonth().toString(),
+            lTwo.getSchDepTime().toString());
+
+        if (checkValidConnection(schLegOneArrTime, schLegTwoDeptTime)) {
+          writeRoutes(key, context, lOne, lTwo);
+        }
+      }
+    }
+  }
+
+  private void partitionFlights(Iterable<FlightData> values, List<FlightData> legOneFlights,
+      List<FlightData> legTwoFlights) {
     for (FlightData fd : values) {
       if (1 == fd.getLegType().get()) {
         legOneFlights.add(new FlightData(fd));
@@ -35,31 +56,51 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
         legTwoFlights.add(new FlightData(fd));
       }
     }
+  }
 
-    for (FlightData lOne : legOneFlights) {
-      for (FlightData lTwo : legTwoFlights) {
-        Date hopArr;
-        Date hopDep;
-        try {
-          hopArr = hopTimeFormatter.parse(
-              lOne.getYear().toString()
-                  + StringUtils.leftPad(lOne.getMonth().toString(), 2, '0')
-                  + StringUtils.leftPad(lOne.getDayOfMonth().toString(), 2, '0')
-                  + lOne.getSchArrTime().toString());
-          hopDep = hopTimeFormatter.parse(
-              lTwo.getYear().toString()
-                  + StringUtils.leftPad(lTwo.getMonth().toString(), 2, '0')
-                  + StringUtils.leftPad(lTwo.getDayOfMonth().toString(), 2, '0')
-                  + lTwo.getSchDepTime().toString());
-          long diffMinutes = (hopDep.getTime() - hopArr.getTime()) / (60 * 1000) % 60;
-          System.out.println(diffMinutes);
-          if (diffMinutes <= 1440 && diffMinutes >= 45) {
-            context.write(key, new RouteData(lOne, lTwo));
-          }
-        } catch (ParseException e) {
-          e.printStackTrace();
-        }
-      }
+  private void writeRoutes(RouteKey key, Context context, FlightData lOne, FlightData lTwo)
+      throws IOException, InterruptedException {
+    //Add Label to Train Route
+    if (1 == key.getType().get()) {
+      context.write(key, new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
+    } else {
+      context.write(key, new RouteData(lOne, lTwo, new IntWritable()));
     }
+  }
+
+  private String getDateTime(String year, String month, String dayOfMonth, String time) {
+    return year + StringUtils.leftPad(month, 2, '0')
+        + StringUtils.leftPad(dayOfMonth, 2, '0') + time;
+  }
+
+  private boolean checkValidConnection(String legOneArrTime, String legTwoDepTime) {
+    Date hopArr;
+    Date hopDep;
+    try {
+      hopArr = hopTimeFormatter.parse(legOneArrTime);
+      hopDep = hopTimeFormatter.parse(legTwoDepTime);
+      long diffMinutes = (hopDep.getTime() - hopArr.getTime()) / (60 * 1000) % 60;
+      return diffMinutes <= 1440 && diffMinutes >= 45;
+    } catch (ParseException e) {
+      e.printStackTrace();//TODO: Remove
+      return false;
+    }
+  }
+
+  private int getRouteLabel(FlightData lOne, FlightData lTwo) {
+
+    if (lOne.getCancelled().get() || lTwo.getCancelled().get()) {
+      return 1;
+    }
+    String actLegOneArrTime = getDateTime(lOne.getYear().toString(),
+        lOne.getMonth().toString(),
+        lOne.getDayOfMonth().toString(),
+        lOne.getActArrTime().toString());
+
+    String actLegTwoDeptTime = getDateTime(lTwo.getYear().toString(),
+        lTwo.getMonth().toString(),
+        lTwo.getDayOfMonth().toString(),
+        lTwo.getActDepTime().toString());
+    return checkValidConnection(actLegOneArrTime, actLegTwoDeptTime) ? 2 : 1;
   }
 }

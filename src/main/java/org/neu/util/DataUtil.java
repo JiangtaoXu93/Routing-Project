@@ -2,7 +2,9 @@ package org.neu.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -75,6 +77,7 @@ public class DataUtil {
         fd.setDepDelay(getDelayMinutes(d, "depDelayNew"));
         fd.setSchElapsedTime(new Text(d.get(csvColumnMap.get("crsElapsedTime"))));
         fd.setActElapsedTime(new Text(d.get(csvColumnMap.get("actualElapsedTime"))));
+        fd.setCancelled(new BooleanWritable(BooleanUtils.toBoolean(d.get(csvColumnMap.get("cancelled")))));
       }
     } catch (NumberFormatException nfe) {
       // Do Nothing

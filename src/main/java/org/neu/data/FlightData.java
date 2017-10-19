@@ -3,6 +3,7 @@ package org.neu.data;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -35,12 +36,14 @@ public class FlightData implements Writable {
   private FloatWritable depDelay;//NORMALISED_DELAY
   private Text schElapsedTime;//CRS_ELAPSED_TIME (hhmm)
   private Text actElapsedTime;//ELAPSED_TIME (hhmm)
+  private BooleanWritable cancelled;////CANCELLED
 
   public FlightData(IntWritable legType, IntWritable year, IntWritable month,
       IntWritable dayOfWeek, IntWritable dayOfMonth, IntWritable hourOfDay,
       IntWritable flightId, Text carrier, Text origin, Text dest,
       Text schDepTime, Text actDepTime, Text schArrTime, Text actArrTime,
-      FloatWritable arrDelay, FloatWritable depDelay, Text schElapsedTime, Text actElapsedTime) {
+      FloatWritable arrDelay, FloatWritable depDelay, Text schElapsedTime,
+      Text actElapsedTime, BooleanWritable cancelled) {
     this.legType = legType;
     this.year = year;
     this.month = month;
@@ -59,13 +62,15 @@ public class FlightData implements Writable {
     this.depDelay = depDelay;
     this.schElapsedTime = schElapsedTime;
     this.actElapsedTime = actElapsedTime;
+    this.cancelled = cancelled;
   }
 
   public FlightData(int legType, int year, int month,
       int dayOfWeek, int dayOfMonth, int hourOfDay,
       int flightId, String carrier, String origin, String dest, String schDepTime,
       String actDepTime, String schArrTime, String actArrTime,
-      Float arrDelay, Float depDelay, String schElapsedTime, String actElapsedTime) {
+      Float arrDelay, Float depDelay, String schElapsedTime,
+      String actElapsedTime, Boolean cancelled) {
     this(new IntWritable(legType),
         new IntWritable(year),
         new IntWritable(month),
@@ -83,7 +88,8 @@ public class FlightData implements Writable {
         new FloatWritable(arrDelay),
         new FloatWritable(depDelay),
         new Text(schElapsedTime),
-        new Text(actElapsedTime));
+        new Text(actElapsedTime),
+        new BooleanWritable(cancelled));
   }
 
   public FlightData(FlightData fd) {
@@ -104,14 +110,16 @@ public class FlightData implements Writable {
         new FloatWritable(fd.getArrDelay().get()),
         new FloatWritable(fd.getDepDelay().get()),
         new Text(fd.getSchElapsedTime().toString()),
-        new Text(fd.getActElapsedTime().toString()));
+        new Text(fd.getActElapsedTime().toString()),
+        new BooleanWritable(fd.getCancelled().get())
+    );
   }
 
   public FlightData() {
     this(new IntWritable(), new IntWritable(), new IntWritable(), new IntWritable(),
         new IntWritable(), new IntWritable(), new IntWritable(), new Text(),
         new Text(), new Text(), new Text(), new Text(), new Text(), new Text(),
-        new FloatWritable(), new FloatWritable(), new Text(), new Text());
+        new FloatWritable(), new FloatWritable(), new Text(), new Text(), new BooleanWritable());
   }
 
   @Override
@@ -152,6 +160,8 @@ public class FlightData implements Writable {
     sb.append(schElapsedTime);
     sb.append(SEP_COMMA);
     sb.append(actElapsedTime);
+    sb.append(SEP_COMMA);
+    sb.append(cancelled);
     return sb.toString();
   }
 
@@ -319,6 +329,7 @@ public class FlightData implements Writable {
     depDelay.write(dataOutput);
     schElapsedTime.write(dataOutput);
     actElapsedTime.write(dataOutput);
+    cancelled.write(dataOutput);
 
   }
 
@@ -342,5 +353,14 @@ public class FlightData implements Writable {
     depDelay.readFields(dataInput);
     schElapsedTime.readFields(dataInput);
     actElapsedTime.readFields(dataInput);
+    cancelled.readFields(dataInput);
+  }
+
+  public BooleanWritable getCancelled() {
+    return cancelled;
+  }
+
+  public void setCancelled(BooleanWritable cancelled) {
+    this.cancelled = cancelled;
   }
 }
