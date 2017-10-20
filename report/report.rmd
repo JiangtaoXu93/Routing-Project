@@ -13,6 +13,7 @@ output:
 
 ```{r setup, include=FALSE,echo=FALSE,results='hide',message=FALSE, warning=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
+install.packages('e1071', dependencies=TRUE)
 library(ggplot2)
 library(gridExtra)
 library(dplyr)
@@ -23,44 +24,44 @@ library(knitr)
 library(data.table)
 library(kableExtra)
 library(randomForest)
+library(caret)
+library(compare)
 knitr::opts_knit$set(root.dir = normalizePath(getwd()))
 ```
 
 
-```{r} 
-#Load Train Data
-train.data <- fread(file="data/train-r-00000",header=F,stringsAsFactors=TRUE)
-colnames(train.data) <- c("dataType","origin","hop","des","flightDate","l1.flightType","l1.year","l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.hourOfDay","l1.flightId","l1.carrier","l1.origin","l1.dest","l1.schDepTime","l1.actDepTime","l1.schArrTime","l1.actArrTime","l1.arrDelay","l1.depDelay","l1.schElapsedTime","l1.actElapsedTime","l1.cancelled","l2.flightType","l2.year","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.hourOfDay","l2.flightId","l2.carrier","l2.origin","l2.dest","l2.schDepTime","l2.actDepTime","l2.schArrTime","l2.actArrTime","l2.arrDelay","l2.depDelay","l2.schElapsedTime","l2.actElapsedTime","l2.cancelled","label")
+```{r warning=FALSE} 
+#Load Data
+set.seed(3333)
+cols <- c("dataType","origin","hop","des","flightDate","l1.flightType","l1.year","l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.hourOfDay","l1.flightId","l1.carrier","l1.origin","l1.dest","l1.schDepTime","l1.actDepTime","l1.schArrTime","l1.actArrTime","l1.arrDelay","l1.depDelay","l1.schElapsedTime","l1.actElapsedTime","l1.cancelled","l2.flightType","l2.year","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.hourOfDay","l2.flightId","l2.carrier","l2.origin","l2.dest","l2.schDepTime","l2.actDepTime","l2.schArrTime","l2.actArrTime","l2.arrDelay","l2.depDelay","l2.schElapsedTime","l2.actElapsedTime","l2.cancelled","label")
 
-# Load Test Data
-test.data <- fread(file="data/test-r-00000",header=F,stringsAsFactors=TRUE)
-colnames(test.data) <- c("dataType","origin","hop","des","flightDate","l1.flightType","l1.year","l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.hourOfDay","l1.flightId","l1.carrier","l1.origin","l1.dest","l1.schDepTime","l1.actDepTime","l1.schArrTime","l1.actArrTime","l1.arrDelay","l1.depDelay","l1.schElapsedTime","l1.actElapsedTime","l1.cancelled","l2.flightType","l2.year","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.hourOfDay","l2.flightId","l2.carrier","l2.origin","l2.dest","l2.schDepTime","l2.actDepTime","l2.schArrTime","l2.actArrTime","l2.arrDelay","l2.depDelay","l2.schElapsedTime","l2.actElapsedTime","l2.cancelled","label")
+# train.data <- fread(file="data/train-r-00000",header=F,stringsAsFactors=TRUE, col.names = cols)
+# test.data <- fread(file="data/test-r-00000",header=F,stringsAsFactors=TRUE, col.names = cols)
+
+train.data <- fread(file="../output/route/train-r-00000",header=F,stringsAsFactors=TRUE, col.names = cols)
+test.data <- fread(file="../output/route/test-r-00000",header=F,stringsAsFactors=TRUE, col.names = cols)
 
 # Feature List 
-model.feature.list <- c("dataType", "l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.carrier","l1.origin","l1.dest","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.carrier","l2.origin","l2.dest","label")
+# model.feature.list <- c("dataType", "l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.hourOfDay","l1.carrier","l1.dest","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.hourOfDay","l2.carrier","l2.origin","label")
 
-# model.feature.charlist <- c("origin","hop","des","l1.carrier","l1.origin","l1.dest","l1.cancelled","l2.carrier","l2.origin","l2.dest","l2.cancelled","label")
+model.feature.list <- c("l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.hourOfDay","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.hourOfDay","label")
 
-# Normalizing Data
-model.data <-rbind(train.data, test.data)
-model.data<- model.data[, model.feature.list, with=FALSE]
-# model.data[,c("l1.arrDelay","l2.arrDelay")] <-lapply(model.data[,c("l1.arrDelay","l2.arrDelay"), with=FALSE], scale)
 
-# Dividing train and test set from megred
-model.train.data <- model.data[dataType==1]
-model.test.data <- model.data[dataType==2]
+# Feature Selection on Test and Train
+model.train.data <- train.data[, model.feature.list, with=FALSE]
+model.test.data <-  test.data[, model.feature.list, with=FALSE]
 
-# Removing col `dataType` from both Test and Train
-model.train.data[, "dataType":=NULL]
-model.test.data[, "dataType":=NULL]
-
-# Converting col `label` from Integer to Factor. This is required to run Random Forest as a classifier.  
+# Converting column `label` from Integer to Factor. This is required to run a classifier.  
 model.train.data[,"label"] <-lapply(model.train.data[, "label", with=FALSE], factor)
 
-# Removing empty labels from test set.
+# Extracting and removing labels(0) from test set.
+model.test.label.actual = model.test.data[,"label"] 
 model.test.data[, "label":=NULL]
 
+# Sampling Test Data to Random 5000 rows
+# model.train.data<-model.train.data[sample(nrow(model.train.data), 1000),]
 
+# Explore Transformed Test And Train Set
 dim(model.test.data)
 dim(model.train.data)
 str(model.test.data)
@@ -68,9 +69,23 @@ str(model.train.data)
 head(model.train.data)
 head(model.test.data)
 
-model.rf <- randomForest(label~.,data=model.train.data)
-summary(model.rf)
-model.predictions <- predict(model.rf ,model.test.data)
-model.predictions 
+# Model
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+model.knn <- train(label~., data = model.train.data, method = "knn"
+ ,trControl=trctrl
+ ,preProcess = c("center", "scale")
+ ,tuneLength = 10
+ )
+model.knn
+model.knn$finalModel
+model.test.label.predictions <- predict(model.knn, newdata=model.test.data)
+as.numeric(as.character(model.test.label.predictions))
+model.test.label.actual
+# comparison <- compare(model.test.label.actual,model.test.label.predictions ,allowAll=TRUE)
+# comparison$tM
+model.test.label.predictions
+as.vector(model.test.label.actual)
+model.test.label.actual
+confusionMatrix(model.test.label.predictions, model.test.label.actual)
 
 ```

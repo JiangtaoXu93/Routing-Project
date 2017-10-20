@@ -42,19 +42,7 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
       List<FlightData> legTwoFlights) throws IOException, InterruptedException {
     for (FlightData lOne : legOneFlights) {
       for (FlightData lTwo : legTwoFlights) {
-        String schLegOneArrTime = getDateTime(lOne.getYear().toString(),
-            lOne.getMonth().toString(),
-            lOne.getDayOfMonth().toString(),
-            lOne.getSchArrTime().toString());
-
-        String schLegTwoDeptTime = getDateTime(lTwo.getYear().toString(),
-            lTwo.getMonth().toString(),
-            lTwo.getDayOfMonth().toString(),
-            lTwo.getSchDepTime().toString());
-
-        if (checkValidConnection(schLegOneArrTime, schLegTwoDeptTime)) {
-          writeRoutes(key, context, lOne, lTwo);
-        }
+        writeRoutes(key, context, lOne, lTwo);
       }
     }
   }
@@ -77,7 +65,7 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
       mos.write("train", key,
           new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     } else {
-      mos.write("test", key, new RouteData(lOne, lTwo, new IntWritable()));
+      mos.write("test", key, new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
       mos.write("validate", key,
           new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     }
