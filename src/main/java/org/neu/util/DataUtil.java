@@ -11,6 +11,7 @@ import org.apache.hadoop.io.Text;
 import org.neu.data.FlightData;
 
 /**
+ * DataUtil:check and get sanity data
  * @author Bhanu, Joyal, Jiangtao
  */
 public class DataUtil {

@@ -16,6 +16,12 @@ import org.neu.data.RouteKey;
 import org.neu.mapper.RouteComputeMapper;
 import org.neu.reducer.RouteComputeReducer;
 
+/**
+ * RouteComputeJob: Job class: get the training set, test set and validation set. The difference between 
+ * test and validation set is that validation set contains the actual label of the test, which will be used to 
+ * calculate the predicted accuracy.
+ * @author Bhanu, Joyal, Jiangtao
+ */
 public class RouteComputeJob extends Configured implements Tool {
 
   private static String OUTPUT_SEPARATOR = "mapreduce.output.textoutputformat.separator";
@@ -40,7 +46,7 @@ public class RouteComputeJob extends Configured implements Tool {
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
 
 
-    job.addCacheFile(new Path(args[1] + "/query.csv").toUri());
+    job.addCacheFile(new Path(args[1] + "/query.csv").toUri());//add query into cache
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
 

@@ -8,6 +8,10 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 
+/**
+ * RouteKey: the composite key of mapper output and reducer input
+ * @author Bhanu, Joyal, Jiangtao
+ */
 public class  RouteKey implements WritableComparable<RouteKey> {
 
   private Text source;

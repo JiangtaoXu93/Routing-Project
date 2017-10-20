@@ -8,7 +8,10 @@ import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-
+/**
+ * FlightData: containing information of one flight
+ * @author Bhanu, Joyal, Jiangtao
+ */
 public class FlightData implements Writable {
 
   public static final String SEP_COMMA = ",";
@@ -19,6 +22,7 @@ public class FlightData implements Writable {
    * LegType=2 -> Flight C-B
    */
   private IntWritable legType;
+  
   private IntWritable year;//YEAR
   private IntWritable month;//MONTH
   private IntWritable dayOfWeek;//DAY_OFF_WEEK

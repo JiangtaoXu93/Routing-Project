@@ -5,7 +5,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
-
+/**
+ * RouteData: one RouteData (e.g. A->B->C) contains two FlightData (A->B) and (B->C), 
+ * and its label: valid, not valid or no label yet.
+ * @author Bhanu, Joyal, Jiangtao
+ */
 public class RouteData implements Writable {
 
   private FlightData legOne;
