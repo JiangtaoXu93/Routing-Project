@@ -26,21 +26,26 @@ import org.neu.data.FlightData;
 import org.neu.data.RouteKey;
 import org.neu.util.DataUtil;
 
-
+/**
+ * RouteComputeMapper: Mapper class:
+ * @author Bhanu, Joyal, Jiangtao
+ */
 public class RouteComputeMapper extends
     Mapper<LongWritable, Text, RouteKey, FlightData> {
 
-  private static Map<String, Map<String, Integer>> sdMap = new HashMap<>();
-  private static Map<String, Map<String, Integer>> dsMap = new HashMap<>();
-  private static List<String[]> queryList = new ArrayList<>();
+  private static Map<String, Set<String>> srcToDesMap = new HashMap<>();
+   //key: source airport from query; value: set of destination airport from query
+  private static Map<String, Set<String>> desToSrcMap = new HashMap<>();
+   //key: destination airport from query; value: set of source airport from query
+  private static List<String[]> queryList = new ArrayList<>();//the input query
   private static Set<Integer> yearSet = new HashSet<>();
   private static int computeYear;
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
-    DataUtil.initCsvColumnMap();
-    loadQueryData(context);
-    computeYear = yearSet.iterator().next();// Assuming we have only one year in all queries
+    DataUtil.initCsvColumnMap();//Init DataUtil, which will be used to get sanity data later
+    loadQueryData(context);//Get the list of query
+    computeYear = yearSet.iterator().next();// Assuming that we have the same year in all queries(which mentioned on piazza)
   }
 
   private void loadQueryData(Context context) throws IOException {
@@ -75,17 +80,14 @@ public class RouteComputeMapper extends
 
       /*Add Year*/
       yearSet.add(Integer.valueOf(values[0]));
-
-      /*Load SD MAP*/
-      Map<String, Integer> dMap = sdMap.getOrDefault(values[3], new HashMap<>());
-      dMap.put(values[4], dMap.getOrDefault(values[4], 0) + 1);
-      sdMap.put(values[3], dMap);
-
-      /*Load DS MAP*/
-      Map<String, Integer> sMap = dsMap.getOrDefault(values[4], new HashMap<>());
-      sMap.put(values[3], sMap.getOrDefault(values[3], 0) + 1);
-      dsMap.put(values[4], sMap);
-
+      /*Load source to destination MAP*/
+      Set<String> destinationSet = srcToDesMap.getOrDefault(values[3], new HashSet<String>());
+      destinationSet.add(values[4]);
+      srcToDesMap.put(values[3], destinationSet);
+      /*Load destination to source MAP*/
+      Set<String> sourceSet = desToSrcMap.getOrDefault(values[4], new HashSet<String>());
+      sourceSet.add(values[3]);
+      desToSrcMap.put(values[4], sourceSet);
       /*Add Query*/
       queryList.add(values);
     }
@@ -96,10 +98,10 @@ public class RouteComputeMapper extends
   @Override
   protected void map(LongWritable key, Text value, Context context)
       throws IOException, InterruptedException {
-    FlightData fd = DataUtil.getFlightData(value);
+    FlightData fd = DataUtil.getFlightData(value);//get sanity data
     if (null != fd) {
-      emitTrainData(context, fd);
-      emitTestData(context, fd);
+      emitTrainData(context, fd);//generate training data 
+      emitTestData(context, fd);//generate testing data 
     }
   }
 
@@ -164,39 +166,45 @@ public class RouteComputeMapper extends
   }
 
   private void emitTrainData(Context context, FlightData fd)
-      throws IOException, InterruptedException {
-    //TODO: Change (computeYear - 25) -> (computeYear - 5)
-    if (fd.getYear().get() >= (computeYear - 25) && fd.getYear().get() < computeYear) {
-      writeLegOneTrainFlight(context, fd);
-      writeLegTwoTrainFlight(context, fd);
-    }
+		  throws IOException, InterruptedException {
+	  //TODO: Change yearLength
+	  int yearLength = 25;//select training data from 'yearLength' years 
+
+	  if (fd.getYear().get() >= (computeYear - yearLength) && fd.getYear().get() < computeYear) {
+		  writeLegOneTrainFlight(context, fd);//generate flight from source to intermedia hop 
+		  writeLegTwoTrainFlight(context, fd);//generate flight from intermedia hop to destination
+	  }
   }
 
   private void writeLegOneTrainFlight(Context context, FlightData fd)
       throws IOException, InterruptedException {
-    fd.setLegType(new IntWritable(1));
-    for (Map.Entry<String, Map<String, Integer>> entry : sdMap.entrySet()) {
-      if (StringUtils.equals(entry.getKey(), fd.getOrigin().toString())) {
-        for (String des : entry.getValue().keySet()) {
-          RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(des),
-              new IntWritable(1), new Text(getFlightDate(fd)));
-          context.write(rk, fd);
+    fd.setLegType(new IntWritable(1)); 
+    for (Map.Entry<String, Set<String>> entry : srcToDesMap.entrySet()) {
+        if (StringUtils.equals(entry.getKey(), fd.getOrigin().toString())) {
+        	//if this flight is depart from the source from query
+          for (String des : entry.getValue()) {
+            RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(des),
+                new IntWritable(1), new Text(getFlightDate(fd)));
+            context.write(rk, fd);
+          }
         }
       }
-    }
+    
   }
 
   private void writeLegTwoTrainFlight(Context context, FlightData fd)
       throws IOException, InterruptedException {
-    fd.setLegType(new IntWritable(2));
-    for (Map.Entry<String, Map<String, Integer>> entry : dsMap.entrySet()) {
-      if (StringUtils.equals(entry.getKey(), fd.getDest().toString())) {
-        for (String origin : entry.getValue().keySet()) {
-          RouteKey rk = new RouteKey(new Text(origin), fd.getOrigin(), fd.getDest(),
-              new IntWritable(1), new Text(getFlightDate(fd)));
-          context.write(rk, fd);
+    fd.setLegType(new IntWritable(2)); 
+    for (Map.Entry<String, Set<String>> entry : desToSrcMap.entrySet()) {
+        if (StringUtils.equals(entry.getKey(), fd.getDest().toString())) {
+        	 //if this flight is arrive at the destination from query
+          for (String origin : entry.getValue()) {
+            RouteKey rk = new RouteKey(new Text(origin), fd.getOrigin(), fd.getDest(),
+                new IntWritable(1), new Text(getFlightDate(fd)));
+            context.write(rk, fd);
+          }
         }
       }
-    }
+    
   }
 }
