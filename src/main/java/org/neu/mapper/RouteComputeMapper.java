@@ -27,19 +27,19 @@ import org.neu.data.RouteKey;
 import org.neu.util.DataUtil;
 
 /**
- * RouteComputeMapper: Mapper class:
+ * RouteComputeMapper: generate <key, value> of training data set, and test data set
  * @author Bhanu, Joyal, Jiangtao
  */
 public class RouteComputeMapper extends
 Mapper<LongWritable, Text, RouteKey, FlightData> {
 
 	private static Map<String, Set<String>> srcToDesMap = new HashMap<>();
-	//key: source airport from query; value: set of destination airport from query
+	 //key: source airport from query; value: set of destination airport from query
 	private static Map<String, Set<String>> desToSrcMap = new HashMap<>();
-	//key: destination airport from query; value: set of source airport from query
+	 //key: destination airport from query; value: set of source airport from query
 	private static List<String[]> queryList = new ArrayList<>();//the input query
-	private static Set<Integer> yearSet = new HashSet<>();
-	private static int computeYear;
+	private static Set<Integer> yearSet = new HashSet<>();//years of input query
+	private static int computeYear;//year of input query
 
 	@Override
 	protected void setup(Context context) throws IOException, InterruptedException {
@@ -48,6 +48,10 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 		computeYear = yearSet.iterator().next();// Assuming that we have the same year in all queries(which mentioned on piazza)
 	}
 
+	
+	/**
+	 * load query data from cache file
+	 */
 	private void loadQueryData(Context context) throws IOException {
 		if (context.getCacheFiles() != null && context.getCacheFiles().length > 0) {
 			URI mappingFileUri = context.getCacheFiles()[0];
@@ -61,6 +65,9 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 		}
 	}
 
+	/**
+	 * go throw each query, and add source, destination airport into srcToDesMap, desToSrcMap
+	 */
 	private void getQueryData(Configuration conf, URI mappingFileUri)
 			throws IOException {
 		FileSystem fs = FileSystem.get(mappingFileUri, conf);
@@ -94,6 +101,10 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 		bufferedReader.close();
 	}
 
+	/**
+	 * map: generate 2 kind of <key,value>, according to the year, emit testing data in that year 
+	 * and training data not in that year
+	 */
 	@Override
 	protected void map(LongWritable key, Text value, Context context)
 			throws IOException, InterruptedException {
@@ -104,6 +115,10 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 		}
 	}
 
+	/**
+	 * emit test data if one of airports in flight fd equals to resource or destination, 
+	 * and year of flight is in given query year
+	 */
 	private void emitTestData(Context context, FlightData fd)
 			throws IOException, InterruptedException {
 		for (String[] query : queryList) {
@@ -115,7 +130,7 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 			String queryNextDate = getNextDate(queryDate);
 
 			if (StringUtils.equals(queryDate, flightDate)) {
-				//Emit Test LegOne
+				//Emit Test LegOne(e.g. for route A->B->C, emit A->B)
 				if (StringUtils.equals(queryOrigin, fd.getOrigin().toString())) {
 					fd.setLegType(new IntWritable(1));
 					RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(queryDes),
@@ -123,7 +138,7 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 					context.write(rk, fd);
 				}
 
-				//Emit Test LegTwo
+				//Emit Test LegTwo(e.g. for route A->B->C, emit B->C)
 				if (StringUtils.equals(queryDes, fd.getDest().toString())) {
 					fd.setLegType(new IntWritable(2));
 					RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
@@ -132,7 +147,7 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 				}
 			}
 
-			if (StringUtils.equals(queryNextDate, flightDate)) {
+			if (StringUtils.equals(queryNextDate, flightDate)) {//if arrive at destination next day
 				//Emit Test LegTwo
 				if (StringUtils.equals(queryDes, fd.getDest().toString())) {
 					fd.setLegType(new IntWritable(2));
@@ -151,24 +166,29 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 				+ StringUtils.leftPad(fd.getDayOfMonth().toString(), 2, '0');
 	}
 
+	/**
+	 * return next date of the given date dt
+	 */
 	private String getNextDate(String dt) {
 		try {
-			String qDt = dt;
 			SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 			Calendar c = Calendar.getInstance();
 			c.setTime(sdf.parse(dt));
 			c.add(Calendar.DATE, 1);  // number of days to add
-			dt = sdf.format(c.getTime());
-			return qDt;
+			return sdf.format(c.getTime());
 		} catch (ParseException pe) {
 			return dt;
 		}
 	}
 
+	/**
+	 * emit training data if one of airports in flight fd equals to resource or destination, 
+	 * and year of flight is not in given query year
+	 */
 	private void emitTrainData(Context context, FlightData fd)
 			throws IOException, InterruptedException {
 		//TODO: Change yearLength
-		int yearLength = 25;//select training data from 'yearLength' years 
+		int yearLength = 1;//select training data from 'yearLength' years 
 
 		if (fd.getYear().get() >= (computeYear - yearLength) && fd.getYear().get() < computeYear) {
 			writeLegOneTrainFlight(context, fd);//generate flight from source to intermediate hop 
@@ -176,12 +196,17 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 		}
 	}
 
+	
+	/**
+	 * for a possible route A->B->C, write <key, value> key is A, B, C, type(training or test), date;
+	 * value is FlightData of A->B
+	 */
 	private void writeLegOneTrainFlight(Context context, FlightData fd)
 			throws IOException, InterruptedException {
 		fd.setLegType(new IntWritable(1)); 
 		for (Map.Entry<String, Set<String>> entry : srcToDesMap.entrySet()) {
 			if (StringUtils.equals(entry.getKey(), fd.getOrigin().toString())) {
-				//if this flight is depart from the source from query
+				//if this flight is depart from the source(from query)
 				for (String des : entry.getValue()) {
 					RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(des),
 							new IntWritable(1), new Text(getFlightDate(fd)));
@@ -192,12 +217,17 @@ Mapper<LongWritable, Text, RouteKey, FlightData> {
 
 	}
 
+	
+	/**
+	 * for a possible route A->B->C, write <key, value>: key is A, B, C, type(training or test), date; 
+	 * value is FlightData of B->C
+	 */
 	private void writeLegTwoTrainFlight(Context context, FlightData fd)
 			throws IOException, InterruptedException {
 		fd.setLegType(new IntWritable(2)); 
 		for (Map.Entry<String, Set<String>> entry : desToSrcMap.entrySet()) {
 			if (StringUtils.equals(entry.getKey(), fd.getDest().toString())) {
-				//if this flight is arrive at the destination from query
+				//if this flight is arrive at the destination(from query)
 				for (String origin : entry.getValue()) {
 					RouteKey rk = new RouteKey(new Text(origin), fd.getOrigin(), fd.getDest(),
 							new IntWritable(1), new Text(getFlightDate(fd)));

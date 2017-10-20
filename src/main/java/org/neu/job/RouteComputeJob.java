@@ -17,7 +17,7 @@ import org.neu.mapper.RouteComputeMapper;
 import org.neu.reducer.RouteComputeReducer;
 
 /**
- * RouteComputeJob: Job class: get the training set, test set and validation set. The difference between 
+ * RouteComputeJob: Job class: output the training set, test set and validation set. The difference between 
  * test and validation set is that validation set contains the actual label of the test, which will be used to 
  * calculate the predicted accuracy.
  * @author Bhanu, Joyal, Jiangtao
@@ -39,8 +39,6 @@ public class RouteComputeJob extends Configured implements Tool {
     MultipleOutputs.addNamedOutput(job, "train", TextOutputFormat.class,
         RouteKey.class, RouteData.class);
     MultipleOutputs.addNamedOutput(job, "test", TextOutputFormat.class,
-        RouteKey.class, RouteData.class);
-    MultipleOutputs.addNamedOutput(job, "validate", TextOutputFormat.class,
         RouteKey.class, RouteData.class);
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);

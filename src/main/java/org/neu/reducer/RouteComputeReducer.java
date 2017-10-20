@@ -14,6 +14,10 @@ import org.neu.data.FlightData;
 import org.neu.data.RouteData;
 import org.neu.data.RouteKey;
 
+/**
+ * RouteComputeReducer: reducer to generate the training and testing data set.
+ * @author Bhanu, Joyal, Jiangtao
+ */
 public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey, RouteData> {
 
   private static SimpleDateFormat hopTimeFormatter = new SimpleDateFormat("yyyyMMddHHmm");
@@ -25,6 +29,11 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
   }
 
   @Override
+  /**
+   * Get and gather all the legOne flights and legTwo flights separately, then join legOnes and legTwos, 
+   * and output 2 kind of results according to training/test type
+   * Note: for a route A->B->C: A->B is legOne flight, B->C is legTwo flight
+   */
   protected void reduce(RouteKey key, Iterable<FlightData> values, Context context)
       throws IOException, InterruptedException {
     List<FlightData> legOneFlights = new ArrayList<>();
@@ -38,6 +47,9 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
     mos.close();
   }
 
+  /**
+   * Join all the legOnes and legTwos, then write to output
+   */
   private void computeAndEmitRoutes(RouteKey key, Context context, List<FlightData> legOneFlights,
       List<FlightData> legTwoFlights) throws IOException, InterruptedException {
     for (FlightData lOne : legOneFlights) {
@@ -47,6 +59,10 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
     }
   }
 
+  /**
+   * Gather all the legOnes into List<FlightData> legOneFlights
+   * Gather all the legTwos into List<FlightData> legTwoFlights
+   */
   private void partitionFlights(Iterable<FlightData> values, List<FlightData> legOneFlights,
       List<FlightData> legTwoFlights) {
     for (FlightData fd : values) {
@@ -58,6 +74,9 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
     }
   }
 
+  /**
+   * Write the output of training data and test data
+   */
   private void writeRoutes(RouteKey key, Context context, FlightData lOne, FlightData lTwo)
       throws IOException, InterruptedException {
     //Add Label to Train Route
@@ -66,8 +85,6 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
           new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     } else {
       mos.write("test", key, new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
-      mos.write("validate", key,
-          new RouteData(lOne, lTwo, new IntWritable(getRouteLabel(lOne, lTwo))));
     }
   }
 
@@ -76,6 +93,10 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
         + StringUtils.leftPad(dayOfMonth, 2, '0') + time;
   }
 
+  /**
+   * Input: arrive time of flight1, and depart time of flight2
+   * Output: return whether two flight flight1, flight2 are valid connected or not by checking the arrive, depart time.
+   */
   private boolean checkValidConnection(String legOneArrTime, String legTwoDepTime) {
     Date hopArr;
     Date hopDep;
@@ -89,6 +110,13 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
       return false;
     }
   }
+  
+  
+  /**
+   * Input : Two FlightData(e.g. A->B, B->C)
+   * Output: if either of A->B, B->C has been canceled or A->B, B->C are invalid connected return label 1;
+   * else return label 2;
+   */
 
   private int getRouteLabel(FlightData lOne, FlightData lTwo) {
 
