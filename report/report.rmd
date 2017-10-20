@@ -13,7 +13,7 @@ output:
 
 ```{r setup, include=FALSE,echo=FALSE,results='hide',message=FALSE, warning=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = FALSE, cache=TRUE, warning = FALSE)
-# install.packages('e1071', dependencies=TRUE)
+#install.packages('e1071', dependencies=TRUE)
 library(ggplot2)
 library(gridExtra)
 library(dplyr)
@@ -23,7 +23,6 @@ library(scales)
 library(knitr)
 library(data.table)
 library(kableExtra)
-library(randomForest)
 library(caret)
 knitr::opts_knit$set(root.dir = normalizePath(getwd()))
 ```
@@ -40,7 +39,12 @@ http://janvitek.org/pdpmr/f17/task-a5-routes.html
 *Arrows head represent the data flow*
 
 ## 1. RouteComputeJob
-The job takes as `input` the airline dataset from year 1987-2015 and `query` file and outputs three files namely `test.csv`,`train.csv` and `validate.csv`. Each of the file serves purposes as shown below:
+The job takes as `input` the airline dataset from year 1987-2015 and a `query` file, and outputs two files namely `test-r-00000` and `train-r-00000`. Each of the output file serves purposes as shown below:
+
+```
+ For Query A->B, let a Route be A->C->B.
+ Then, **LegOne Flight** : A->C and **LegTwo Flight** : C->B
+```
 
 ```{r, echo = FALSE,message=FALSE, warning=FALSE, cache=T}
 fileDescDF <- read.csv("data/fileDesc.csv")
