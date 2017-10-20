@@ -66,6 +66,12 @@ public class RouteComputeMapper extends
     String line;
     while ((line = bufferedReader.readLine()) != null) {
       String[] values = line.split(",");
+      
+      if (values.length != 5) continue;// if wrong number of argument in query, skip it
+      if (StringUtils.equals(values[3],values[4])) continue;//if depart airport equals to source airport, skip it
+
+      values[1] = StringUtils.leftPad(values[1], 2, '0');//add 0 before one digit input of month
+      values[2] = StringUtils.leftPad(values[2], 2, '0');//add 0 before one digit input of day of month
 
       /*Add Year*/
       yearSet.add(Integer.valueOf(values[0]));
