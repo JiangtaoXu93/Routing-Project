@@ -100,9 +100,7 @@ public class RouteComputeMapper extends
   private void emitTestData(Context context, FlightData fd)
       throws IOException, InterruptedException {
     for (String[] query : queryList) {
-      String flightDate = fd.getYear().toString()
-          + StringUtils.leftPad(fd.getMonth().toString(), 2, '0')
-          + StringUtils.leftPad(fd.getDayOfMonth().toString(), 2, '0');
+      String flightDate = getFlightDate(fd);
       String queryDate = query[0] + query[1] + query[2];
       String queryOrigin = query[3];
       String queryDes = query[4];
@@ -139,6 +137,12 @@ public class RouteComputeMapper extends
     }
   }
 
+  private String getFlightDate(FlightData fd) {
+    return fd.getYear().toString()
+        + StringUtils.leftPad(fd.getMonth().toString(), 2, '0')
+        + StringUtils.leftPad(fd.getDayOfMonth().toString(), 2, '0');
+  }
+
   private String getNextDate(String dt) {
     try {
       String qDt = dt;
@@ -169,7 +173,7 @@ public class RouteComputeMapper extends
       if (StringUtils.equals(entry.getKey(), fd.getOrigin().toString())) {
         for (String des : entry.getValue().keySet()) {
           RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(des),
-              new IntWritable(1), new Text());
+              new IntWritable(1), new Text(getFlightDate(fd)));
           context.write(rk, fd);
         }
       }
@@ -183,7 +187,7 @@ public class RouteComputeMapper extends
       if (StringUtils.equals(entry.getKey(), fd.getDest().toString())) {
         for (String origin : entry.getValue().keySet()) {
           RouteKey rk = new RouteKey(new Text(origin), fd.getOrigin(), fd.getDest(),
-              new IntWritable(1), new Text());
+              new IntWritable(1), new Text(getFlightDate(fd)));
           context.write(rk, fd);
         }
       }

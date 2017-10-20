@@ -56,11 +56,6 @@ public class RoutePrediction {
     d2 = System.nanoTime();
     bmd.setFlightDelayJob((double) ((d2 - d1) / 1000000));
 
-
-
-    //ML PredictionUtil
-//    result = ToolRunner.run(conf, new RoutePredictionJob(), args);
-
   }
 
   /**
