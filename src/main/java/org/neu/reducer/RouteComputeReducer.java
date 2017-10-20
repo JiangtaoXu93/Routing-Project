@@ -94,7 +94,7 @@ public class RouteComputeReducer extends Reducer<RouteKey, FlightData, RouteKey,
     try {
       hopArr = hopTimeFormatter.parse(legOneArrTime);
       hopDep = hopTimeFormatter.parse(legTwoDepTime);
-      long diffMinutes = (hopDep.getTime() - hopArr.getTime()) / (60 * 1000) % 60;
+      long diffMinutes = (hopDep.getTime() - hopArr.getTime()) / (60 * 1000);
       return diffMinutes <= 720 && diffMinutes >= 45;
     } catch (ParseException e) {
       e.printStackTrace();//TODO: Remove
