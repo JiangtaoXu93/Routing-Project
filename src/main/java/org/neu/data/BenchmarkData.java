@@ -13,16 +13,16 @@ public class BenchmarkData {
   private String input;
   private Date dateTime;
   private Double totalExecutionTime;
-  private Double flightDelayJob;
+  private Double routeComputeJob;
 
   public BenchmarkData(int threadCount, int iteration, String queryFile, Double totalExecutionTime,
-      String input, Date dateTime, Double flightDelayJob) {
+      String input, Date dateTime, Double routeComputeJob) {
     this.threadCount = threadCount;
     this.iteration = iteration;
     this.queryFile = queryFile;
     this.totalExecutionTime = totalExecutionTime;
     this.input = input;
-    this.flightDelayJob = flightDelayJob;
+    this.routeComputeJob = routeComputeJob;
     this.dateTime = dateTime;
   }
 
@@ -77,12 +77,12 @@ public class BenchmarkData {
     this.queryFile = queryFile;
   }
 
-  public Double getFlightDelayJob() {
-    return flightDelayJob;
+  public Double getRouteComputeJob() {
+    return routeComputeJob;
   }
 
-  public void setFlightDelayJob(Double flightDelayJob) {
-    this.flightDelayJob = flightDelayJob;
+  public void setRouteComputeJob(Double routeComputeJob) {
+    this.routeComputeJob = routeComputeJob;
   }
 
 }

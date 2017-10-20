@@ -43,7 +43,7 @@ The job takes as `input` the airline dataset from year 1987-2015 and a `query` f
 
 ```
  For Query A->B, let a Route be A->C->B.
- Then, **LegOne Flight** : A->C and **LegTwo Flight** : C->B
+ Then, LegOne Flight : A->C and LegTwo Flight : C->B
 ```
 
 ```{r, echo = FALSE,message=FALSE, warning=FALSE, cache=T}
@@ -62,8 +62,8 @@ kable_styling(kable(mapperVarDF,"html"),bootstrap_options = "striped", full_widt
 ```
 
 #### Setup Phase
-Each mapper will have shared access to `queryList` instance member described above. In setup phase, the `queryList` is populated with each row tuple from input query file.
-Apart from this, the sdMap (source-destination map) and dsMap also gets populated. This is done as shown below:
+Each mapper will have shared access to `queryList`. In setup phase, the `queryList` is populated with each row tuple from input query file.
+Apart from this, the `srcToDesMap` (source-destination map) and desToSrcMap also gets populated. This is done as shown below:
 
 Assume that for a given query file we have following values:
 
@@ -73,30 +73,26 @@ kable_styling(kable(sampleQueryDF,"html"), bootstrap_options = "striped", full_w
 ```        
 
 
-As shown in the above table, there are two unique source (`BOS` and `ATL`) and four unique destination for query (`SEA`,`ATL`,`JFK`,`FLO`).
+As shown in the above table, there are two unique sources (`BOS` and `ATL`) and four unique destinations (`SEA`,`ATL`,`JFK`,`FLO`).
 
-The sdMap will be populated with following key,value pairs
+The `srcToDesMap` will be populated with following key,value pairs
 
 ```{r, echo = FALSE,message=FALSE, warning=FALSE, cache=T}
 sdMap <- read.csv("data/sdMap.csv")
 kable_styling(kable(sdMap,"html"), bootstrap_options = "striped", full_width = F, position = "left")
 ```
 
-The dsMap will be populated with following key,value pairs
+The `desToSrcMap` will be populated with following key,value pairs
 ```{r, echo = FALSE,message=FALSE, warning=FALSE, cache=T}
 dsMap <- read.csv("data/dsMap.csv")
 kable_styling(kable(dsMap,"html"), bootstrap_options = "striped", full_width = F, position = "left")
 ```
 
-The main purpose of this job is to figure out a hop between source and destination. 
+The below procedure shows exactly these instance variables are used to emit keys from mapper.  
 
-The below procedure shows exactly how each map will be used to figure out a route.
+1. With the given query data, assume that in current mapper input record, we get a flight=`f1` with Origin=`BOS` and Destination=`C`.
 
-1. With the given query data, assume that in input we get a connection 'C' from 'BOS'.
-
-2. For each input we will check whether the source matches any of the key for sdMap. 
-   For example if the input has `BOS` as source then, according to map as `BOS` has 3 unique destinations, 
-   for each input, map will emit three set of keys:
+2. For `f1`, will check whether `f1.origin` matches any of the keys in the `srcToDesMap`. In this scenario, `f1.origin` matches to `srcToDesMap`'s key `BOS`, which has 3 unique destinations. Thus will emit three set of keys:
    
     ```
     <BOS-C-SEA>
@@ -104,26 +100,22 @@ The below procedure shows exactly how each map will be used to figure out a rout
     <BOS-C-JFK>
     ```
    
-    The value for each of these keys will have a flag set to '1', indicating this is a route for **Leg 1**.
-    **C** is the current input data's destination value.
+    The value for each of these keys will have a flag set to `1`, indicating this is a flight for **Leg 1**.
 
-3. For each input we will also check whether the destination matches any of the key for dsMap. 
-   For example if the input has `SEA` has destination then, according to map as `SEA` has one unique source,
-   map will emit following keys:
+3. For each mapper input we will also check whether the destination matches any of the key in `desToSrcMap`. 
+   Suppose we get a flight=`f2` with Origin=`C` and Destination=`SEA`. Now as `f2.destination` matches with desToSrcMap's `SEA` we will emit only one key(`SEA` in `desToSrcMap` has one unique source):
    
     ```
     <BOS-C-SEA>
     ```
     
-    The value for each of these keys will have a flag set to '2', indicating this is a route for **Leg 2**.
-    **C** is the current input data's source value.
-
-4. In the reducer, we will then have a key and list of values where the values will be either of leg1 or leg2 for that route.
+    The value for each of such keys will have a flag set to `2`, indicating this is a flight for **Leg 2**.
+    
 
 #### Mapper Phase 
 
-The mapper reads each line from flight record csv file, cleans data as per given sanity rules and emits 2 kind of <key,value> pair. Given a year, it emits test data in that year
-and train data **not** in that year. The `key` is type of `RouteKey` class which implements `WritableComparable` interface while the `value` is type of `FlightData` class which implements `Writable` interface.
+The mapper reads each line from flight record csv file, cleans data as per given sanity rules(in A4) and emits 2 kind of <key,value> pair. Given a year, it emits test data in that year
+and train data **not** in that year. The `key` is of type `RouteKey` which implements `WritableComparable` while the `value` is of type `FlightData` which implements `Writable`.
 
 ```
 # RouteComputeMapper Input k,v
@@ -145,39 +137,19 @@ public class RouteKey implements WritableComparable<RouteKey> {
   private Text date;//yyyyMMdd
 }
 ```
-
-The mapper emits key of type `RouteKey` for both train and test dataset.
-
 The following are the differences between the implementation of mapper for train and test data.
 
-1. For train dataset the value for type would be **1**, while for test dataset the value for the type would be **2**.
+1. For **train** dataset the value for `RouteKey.type` would be **1**, while for test dataset the value for the `RouteKey.type` would be **2**.
 
-2. For **train** dataset, mapper emits leg1 and leg2 flight for a user configured value which is less than query year value.
-   For example, if the query year is `2001` and the user has specified `3` years for model generation, then the train dataset will contain
-   data for years **`{1998,1999,2000}`**.
-   
-   For **test** dataset, mapper emits leg1 and leg2 flight for query year value. So, in the above example, the test dataset will contain
-   data for year **`2001`** only.
-   
-3. There is one more implementation in the test phase. Suppose, for a given route A-C-B, where A is the source, C is the hop and B is the destination, if the    flight reaches C at 2330 hours for a given date, and the next flight from C to B is at 0030 for the next date, then below condition is specifically 
-   handled in the code.
+2. For **train** dataset, mapper emits leg1 and leg2 flight.
+
+    
+    For example, if the query year is `2001` and the user has specified `3` years for model generation, then the train dataset will contain data for years **`{1998,1999,2000}`**.
+    
+    For **test** dataset, mapper emits leg1 and leg2 flight for query year value. So, in the above example, the test dataset will only contain data for year **`2001`**.
    
    
-```java
-String queryNextDate = getNextDate(queryDate);
- 
-if (StringUtils.equals(queryNextDate, flightDate)) {//if arrive at destination next day
-    //Emit Test LegTwo
-    if (StringUtils.equals(queryDes, fd.getDest().toString())) {
-      fd.setLegType(new IntWritable(2));
-      RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
-          new IntWritable(2), new Text(queryDate));
-      context.write(rk, fd);
-    }
-}
-```
-   
-   Here, for test data a new set of <key, value> pair will be emitted where the key will have date for next day. 
+3. There is one more corner case handled for the test phase. Suppose, for a given route A->C->B, where A is the source, C is the hop and B is the destination, if the flight reaches C at 2330 hours for a given date, and the next flight from C to B is at 0030 for the next date, then for test data a new set of <key, value> pair will be emitted where the key will have date for next day. 
 
 #### FlightData
 
@@ -213,8 +185,6 @@ public class FlightData implements Writable {
   private BooleanWritable cancelled;////CANCELLED
 }
 ```
-This class has its own getter and setter methods and stores value of each input csv record. There is also a special field `legType`, which takes either of
-two values: **`1`** or **`2`**, where **`1`** indicates flight data for **Leg1** journey and **`2`** indicates flight data for **Leg2** journey.
 
 ### 1b. RouteComputeReducer
 
@@ -227,7 +197,7 @@ RouteKey, FlightData
 RouteKey, RouteData
 ```
 
-The reducer generates the training and testing data set and its implementation differs in the followings for both datasets.
+The reducer generates the training and testing data sets and its implementation differs as following.
 
 ```
  For Train
@@ -255,7 +225,11 @@ The reducer generates the training and testing data set and its implementation d
 
 # Prediction
 
-After generating test/train data through the MR job we use KNN classifier to predict labels for the test routes. (Please note that label=1 is an invalid route and label=2 is a valid route.)
+After generating test/train data through the MR job we use KNN classifier to predict labels for the test routes. 
+
+*Please note that label=1 is an invalid route and label=2 is a valid route.*
+
+*Prediction and scoring are done in R.*
 
 ```{r, warning=FALSE, cache=TRUE, echo=FALSE} 
 #Load Data
@@ -301,7 +275,7 @@ str(model.train.data)
 ```
 
 ## Test Data Set
-Training set has 877 observations distributed over 8 similar features. These are all the possible two hop routes for the given input query.
+Test set has 877 observations distributed over 8 features. These observations are all the possible two hop routes for the given input query.
 ```{r, warning=FALSE, cache=TRUE} 
 dim(model.test.data)
 ```
@@ -350,7 +324,7 @@ fourfoldplot(model.test.cf$table, main = "Plot 2. Confusion Matrix for Acutal vs
 * The Quadrant-3 = 125 -> We labelled 125 routes as 2(valid) while they were actually 1(not valid).
 * The Quadrant-4 = 82  -> We labelled 82 routes as 2(valid) while they were actually 2(valid).
 
-Further, we get an accuracy of `0.7902` on our test data. This number is pretty decent and can improve with increasing the sample space and more intrinsic feature selection.
+Further, we got an accuracy of `0.7902` on our test data. This number is pretty decent and can be improved by increasing the sample space and having more intrinsic feature selection.
 
 ## Plot for KNN Labels
 ```{r, warning=FALSE, cache=TRUE} 
@@ -385,21 +359,30 @@ output.routes <- routes.valid[,c("flightDate","origin","des","l1.actDepTime","l1
 # Results
 
 ## Input Queries
+We randomly picked 10 inputs for the same year as follows,
 ```{r, warning=FALSE, cache=TRUE, echo=F, message=FALSE} 
 kable(read.csv("../query/query.csv",header=F, col.names = c("year","month","day","origin","destination"))) %>% kable_styling(bootstrap_options = "striped", full_width = F)
 ```
 
 ## Ouput Routes 
+These are the valid(label=2) 2 hop routes(#207) generated by our model for given 10 input queries.
 ```{r, warning=FALSE, cache=TRUE, echo=F, message=FALSE} 
 kable(output.routes) %>% kable_styling(bootstrap_options = "striped", full_width = F)
 write.csv(output.routes, file = "finalOutputRoutes.csv",row.names=FALSE)
 ```
 
 ## Scores
+The score shown here is exactly what was asked in the assigment. 
+
+`Scoring: 1 point per flight if the flight arrives on time at the destination, -100 per proposed flight that does not arrive on time or is cancelled`. 
+
 ```{r, warning=FALSE, cache=TRUE, message=F, echo=F}
 kable(t(final.score)) %>% kable_styling(bootstrap_options = "striped", full_width = F)
+
 ```
 
+
+The score above does not reflect whether the routes are correct or not. All 207 routes are valid routes, with permissible layover time. The score is low due to the fact that 106 routes were delayed (though still valid).
 
 # Job Execution
 
@@ -427,3 +410,10 @@ The job took 14.5m to run on the complete corpus. Below are some important obser
 
 ## AWS EMR
 Ran the same job on 4 cluster m4.xlarge EMR. The entire corpus took 10.4m to run. There is not much improvement because the data not big enough to produce any noticeable results. Also there is network i/o between distributed mappers and reducer causing some delay.
+
+# Work Breakdown
+*  **Design** : Bhanu , Joyal, Jiangtao
+*  **Implementaion** : Bhanu , Joyal, Jiangtao
+*  **Reporting** : Bhanu , Joyal
+*  **Execution** : Jiangtao, Bhanu
+*  **Documentation** : Jiangtao, Joyal

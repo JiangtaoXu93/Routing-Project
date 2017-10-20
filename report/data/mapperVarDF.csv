@@ -1,5 +1,5 @@
 Variable,Description
-sdMap,It represents source-destination connected graph
-dsMap,It represents destination-source connected graph
+srcToDesMap,It represents source-destination connected graph
+desToSrcMap,It represents destination-source connected graph
 queryList,"List of all query tuples in format of Year, Month, Day, Origin, Destination (e.g. 2001, 09, 11, DEN, DCA) where Year is the same for all tuples"
 yearSet,All Unique years in query tuple. Currently program runs assuming there would be single year for all query tuples

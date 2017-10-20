@@ -42,7 +42,7 @@ public class BenchmarkUtil {
       add("k");
       add("Iteration");
       add("TotalExecutionTime");
-      add("FlightDelayJobExecutionTime");
+      add("RouteComputeJobTime");
     }});
     for (BenchmarkData bmd : benchmarkData) {
       writeRow(row, bmd);
@@ -76,7 +76,7 @@ public class BenchmarkUtil {
     row.append(",");
     row.append(bmd.getTotalExecutionTime());
     row.append(",");
-    row.append(bmd.getFlightDelayJob());
+    row.append(bmd.getRouteComputeJob());
     row.append(",");
     row.append("\n");
   }

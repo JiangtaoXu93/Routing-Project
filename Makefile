@@ -1,4 +1,5 @@
-REPETITIONS = 1
+REPETITIONS=1
+TRAINING_YR_LENGTH=1
 HADOOP_HOME=/usr/local/hadoop
 HADOOP_VERSION=2.8.1
 MY_CLASSPATH=${HADOOP_HOME}/share/hadoop/common/hadoop-common-${HADOOP_VERSION}.jar:${HADOOP_HOME}/share/hadoop/mapreduce/*:lib/*:lib/commons-lang3-3.6/*:lib/commons-lang-2.6/*:out:.
@@ -7,7 +8,7 @@ INPUT_FOLDER=input
 QUERY_FOLDER=query
 OUTPUT_FOLDER=output
 # INPUT_TYPE is the folder inside input folder. you can define multiple folders contining diff no. of inputs
-INPUT_TYPE=less
+INPUT_TYPE=all
 REPORT_FOLDER=report
 JAR_NAME=RoutePrediction.jar
 JAR_PATH=${JAR_NAME}
@@ -27,9 +28,7 @@ AWS_CONFIG=config/config.json
 AWS_LOG_DIR=log
 AWS_NUM_NODES=1
 AWS_INSTANCE_TYPE=m1.medium
-#AWS_INSTANCE_TYPE=m4.xlarge
 
-#all: build gunzip setup-hdfs run
 all: build setup-hdfs run
 
 all-uz: build setup-hdfs run
@@ -44,9 +43,7 @@ compile:
 	${PROJECT_BASE}/job/*.java \
 	${PROJECT_BASE}/mapper/*.java \
 	${PROJECT_BASE}/reducer/*.java \
-	${PROJECT_BASE}/data/*.java \
-#	${PROJECT_BASE}/combiner/*.java \
-#	${PROJECT_BASE}/comparator/*.java \
+	${PROJECT_BASE}/data/*.java
 
 jar:
 	cp -r META-INF/MANIFEST.MF out
@@ -54,7 +51,7 @@ jar:
 	mv out/${JAR_NAME} .
 
 run:
-	${HADOOP_HOME}/bin/hadoop jar ${JAR_NAME} ${REPETITIONS} ${QUERY_FOLDER} ${INPUT_FOLDER} ${OUTPUT_FOLDER} ${REPORT_FOLDER}
+	${HADOOP_HOME}/bin/hadoop jar ${JAR_NAME} ${REPETITIONS} ${QUERY_FOLDER} ${INPUT_FOLDER} ${OUTPUT_FOLDER} ${REPORT_FOLDER} ${TRAINING_YR_LENGTH}
 
 clean:
 	$(HADOOP_HOME)/bin/hdfs dfs -rm -r output;
@@ -105,7 +102,7 @@ cloud: build upload-app-aws delete-output-aws
 		--release-label ${AWS_EMR_RELEASE} \
 		--instance-groups InstanceCount=${AWS_NUM_NODES},InstanceGroupType=CORE,InstanceType=${AWS_INSTANCE_TYPE} InstanceCount=1,InstanceGroupType=MASTER,InstanceType=${AWS_INSTANCE_TYPE} \
 	    --applications Name=Hadoop \
-	    --steps Args=${REPETITIONS},${INPUT_QUERY},s3://${AWS_BUCKET_NAME}/${AWS_INPUT}/${INPUT_TYPE},s3://${AWS_BUCKET_NAME}/${AWS_OUTPUT},s3://${AWS_BUCKET_NAME}/${REPORT_FOLDER},Type=CUSTOM_JAR,Jar=s3://${AWS_BUCKET_NAME}/${JAR_NAME},ActionOnFailure=TERMINATE_CLUSTER,Name=${JOB_NAME} \
+	    --steps Args=${REPETITIONS},${INPUT_QUERY},s3://${AWS_BUCKET_NAME}/${AWS_INPUT}/${INPUT_TYPE},s3://${AWS_BUCKET_NAME}/${AWS_OUTPUT},s3://${AWS_BUCKET_NAME}/${REPORT_FOLDER},${TRAINING_YR_LENGTH},Type=CUSTOM_JAR,Jar=s3://${AWS_BUCKET_NAME}/${JAR_NAME},ActionOnFailure=TERMINATE_CLUSTER,Name=${JOB_NAME} \
 		--log-uri s3://${AWS_BUCKET_NAME}/${AWS_LOG_DIR} \
 		--service-role EMR_DefaultRole \
 		--ec2-attributes InstanceProfile=EMR_EC2_DefaultRole,SubnetId=${AWS_SUBNET_ID} \
@@ -119,7 +116,7 @@ cloud-custom: build upload-app-aws delete-output-aws
 		--release-label ${AWS_EMR_RELEASE} \
 		--instance-groups InstanceCount=${AWS_NUM_NODES},InstanceGroupType=CORE,InstanceType=${AWS_INSTANCE_TYPE} InstanceCount=1,InstanceGroupType=MASTER,InstanceType=${AWS_INSTANCE_TYPE} \
 	    --applications Name=Hadoop \
-	    --steps Args=${REPETITIONS},${INPUT_QUERY},s3://${AWS_BUCKET_NAME}/${AWS_INPUT}/${INPUT_TYPE},s3://${AWS_BUCKET_NAME}/${AWS_OUTPUT},s3://${AWS_BUCKET_NAME}/${REPORT_FOLDER},Type=CUSTOM_JAR,Jar=s3://${AWS_BUCKET_NAME}/${JAR_NAME},ActionOnFailure=TERMINATE_CLUSTER,Name=${JOB_NAME} \
+	    --steps Args=${REPETITIONS},${INPUT_QUERY},s3://${AWS_BUCKET_NAME}/${AWS_INPUT}/${INPUT_TYPE},s3://${AWS_BUCKET_NAME}/${AWS_OUTPUT},s3://${AWS_BUCKET_NAME}/${REPORT_FOLDER},${TRAINING_YR_LENGTH},Type=CUSTOM_JAR,Jar=s3://${AWS_BUCKET_NAME}/${JAR_NAME},ActionOnFailure=TERMINATE_CLUSTER,Name=${JOB_NAME} \
 		--log-uri s3://${AWS_BUCKET_NAME}/${AWS_LOG_DIR} \
 		--service-role EMR_DefaultRole \
 		--ec2-attributes InstanceProfile=EMR_EC2_DefaultRole,SubnetId=${AWS_SUBNET_ID} \
@@ -134,7 +131,7 @@ cloud-big: build upload-app-aws delete-output-aws
 		--release-label ${AWS_EMR_RELEASE} \
 		--instance-groups InstanceCount=${AWS_NUM_NODES},InstanceGroupType=CORE,InstanceType=${AWS_INSTANCE_TYPE} InstanceCount=1,InstanceGroupType=MASTER,InstanceType=m4.large \
 	    --applications Name=Hadoop \
-	    --steps Args=${REPETITIONS},${INPUT_QUERY},s3://${AWS_BUCKET_NAME}/${AWS_INPUT}/${INPUT_TYPE},s3://${AWS_BUCKET_NAME}/${AWS_OUTPUT},s3://${AWS_BUCKET_NAME}/${REPORT_FOLDER},Type=CUSTOM_JAR,Jar=s3://${AWS_BUCKET_NAME}/${JAR_NAME},ActionOnFailure=TERMINATE_CLUSTER,Name=${JOB_NAME} \
+	    --steps Args=${REPETITIONS},${INPUT_QUERY},s3://${AWS_BUCKET_NAME}/${AWS_INPUT}/${INPUT_TYPE},s3://${AWS_BUCKET_NAME}/${AWS_OUTPUT},s3://${AWS_BUCKET_NAME}/${REPORT_FOLDER},${TRAINING_YR_LENGTH},Type=CUSTOM_JAR,Jar=s3://${AWS_BUCKET_NAME}/${JAR_NAME},ActionOnFailure=TERMINATE_CLUSTER,Name=${JOB_NAME} \
 		--log-uri s3://${AWS_BUCKET_NAME}/${AWS_LOG_DIR} \
 		--service-role EMR_DefaultRole \
 		--ec2-attributes InstanceProfile=EMR_EC2_DefaultRole,SubnetId=${AWS_SUBNET_ID} \
