@@ -175,6 +175,10 @@ public class DataUtil {
     return true;
 
   }
+  
+  public static String addLeftPad(String s) {
+	  return StringUtils.leftPad(s, 2, '0');//add 0 before s if length of s is less than 2;  
+  }
 
   /**
    * @return False if any of the field is empty

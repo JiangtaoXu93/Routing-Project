@@ -24,6 +24,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.neu.data.FlightData;
 import org.neu.data.RouteKey;
+import org.neu.job.RouteComputeJob;
 import org.neu.util.DataUtil;
 
 /**
@@ -61,13 +62,15 @@ public class RouteComputeMapper extends
   private static List<String[]> queryList = new ArrayList<>();//the input query
   private static Map<String, Set<String>> srcToDesMap = new HashMap<>();
   private static Set<Integer> yearSet = new HashSet<>();//years of input query
-  private static int computeYear;//year of input query
+  private static int computeYear;//year of input query 
+  private static int trainingYearLen;//select training data from 'trainingYearLen' years
 
   @Override
   protected void setup(Context context) throws IOException, InterruptedException {
     DataUtil
         .initCsvColumnMap();//Init DataUtil, which will be used to fetch flight data after sanity
     loadQueryData(context);
+    trainingYearLen = context.getConfiguration().getInt(RouteComputeJob.TRAINING_YEAR_LENGTH, 1);
     computeYear = yearSet.iterator()
         .next();// Assuming that we have the same year in all queries(which mentioned on piazza)
   }
@@ -132,9 +135,8 @@ public class RouteComputeMapper extends
     if (StringUtils.equals(values[3], values[4])) {
       return false;
     }
-    values[1] = StringUtils.leftPad(values[1], 2, '0');//add 0 before one digit input of month
-    values[2] = StringUtils
-        .leftPad(values[2], 2, '0');//add 0 before one digit input of day of month
+    values[1] = DataUtil.addLeftPad(values[1]);//add 0 before if month only contains one digit
+    values[2] = DataUtil.addLeftPad(values[2]);//add 0 before if day only contains one digit
     return true;
   }
 
@@ -199,8 +201,8 @@ public class RouteComputeMapper extends
 
   private String getFlightDate(FlightData fd) {
     return fd.getYear().toString()
-        + StringUtils.leftPad(fd.getMonth().toString(), 2, '0')
-        + StringUtils.leftPad(fd.getDayOfMonth().toString(), 2, '0');
+    		+ DataUtil.addLeftPad(fd.getMonth().toString())
+    		+ DataUtil.addLeftPad(fd.getDayOfMonth().toString().toString());
   }
 
   /**
@@ -225,7 +227,7 @@ public class RouteComputeMapper extends
   private void emitTrainData(Context context, FlightData fd)
       throws IOException, InterruptedException {
     //TODO: Change yearLength
-    int trainingYearLen = 1;//select training data from 'yearLength' years
+    
     if (fd.getYear().get() >= (computeYear - trainingYearLen) && fd.getYear().get() < computeYear) {
       writeLegOneTrainFlight(context, fd);//generate flight from source to intermediate hop
       writeLegTwoTrainFlight(context, fd);//generate flight from intermediate hop to destination

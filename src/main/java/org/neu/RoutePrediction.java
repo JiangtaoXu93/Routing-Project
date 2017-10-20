@@ -18,7 +18,7 @@ import org.neu.util.BenchmarkUtil;
 public class RoutePrediction {
 
 	public static void main(String[] args) throws Exception {
-		if (args.length < 5) {
+		if (args.length < 6) {
 			System.out.println("Invalid Arguments.");
 			System.exit(1);
 		}

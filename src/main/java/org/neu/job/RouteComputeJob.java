@@ -29,6 +29,7 @@ import org.neu.reducer.RouteComputeReducer;
 public class RouteComputeJob extends Configured implements Tool {
 
   private static String OUTPUT_SEPARATOR = "mapreduce.output.textoutputformat.separator";
+  public static String TRAINING_YEAR_LENGTH = "train_year_length";
 
 
   @Override
@@ -36,6 +37,7 @@ public class RouteComputeJob extends Configured implements Tool {
     Job job = Job.getInstance(getConf(), "RouteComputeJob");
     job.setJarByClass(this.getClass());
     job.getConfiguration().set(OUTPUT_SEPARATOR, ",");
+    job.getConfiguration().set(TRAINING_YEAR_LENGTH, args[5]);
 
     FileInputFormat.addInputPath(job, new Path(args[2]));
     FileOutputFormat.setOutputPath(job, new Path(args[3] + "/route"));
