@@ -4,8 +4,8 @@ http://janvitek.org/pdpmr/f17/task-a5-routes.html
 
 ## Code Structure
 
-- `Driver`  : `org.neu.FlightPerformance`
-  - Arguments `<iterations> <queryFile> <input> <output> <report-loc>`
+- `Driver`  : `org.neu.RoutePrediction`
+  - Arguments `<iterations> <queryFile> <input> <output> <report-loc> <training-year-length>`
 - `Job` :  `org.neu.job.FlightDelayJob`
 
 ## Hadoop Cluster Config
@@ -18,9 +18,22 @@ Used with Experiment 1 mentioned in the report
 
 
 ## Running Instructions
+
 ### Local
+
+####Prepare : 
+
+1) Create your query with format: "YYYY, MM, DD, SOURCE_AIRPORT, DESTINATION_AIRPORT" (e.g. 2001, 09, 11, DEN, DCA). Put your queries in /query/query.csv.
+
+2) Put your flight information CSV at /input/all.
+
+3) Modify HADOOP_HOME HADOOP_VERSION in Makefile to your hadoop home and version.
+
+####Run : 
+
 - Default : `make` (_`build gunzip setup-hdfs run`_)
 - If already unzipped use : `make all-uz` (_`build setup-hdfs run`_)
+
 ### AWS EMR
 Make sure you have AWS CLI working with your KEY+SECRET
 - Step1: 
