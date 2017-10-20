@@ -49,7 +49,8 @@ public class DataUtil {
     csvColumnMap.put("arrDel15", 44);//ARR_DEL15
     csvColumnMap.put("cancelled", 47);//CANCELLED
     csvColumnMap.put("crsElapsedTime", 50);//CRS_ELAPSED_TIME
-    csvColumnMap.put("actualElapsedTime", 51);//ActualElapsedTime
+    csvColumnMap.put("actualElapsedTime", 51);//ACTUAL_ELAPSED_TIME
+    //csvColumnMap.put("weatherDelay",57); //WEATHER_DELAY
   }
 
   public static FlightData getFlightData(Text value) throws NumberFormatException {
@@ -64,7 +65,7 @@ public class DataUtil {
         fd.setMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("month")))));
         fd.setDayOfWeek(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfWeek")))));
         fd.setDayOfMonth(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("dayOfMonth")))));
-        fd.setHourOfDay(new IntWritable()); //TODO
+        fd.setHourOfDay(new IntWritable(getHourOfDay(d.get(csvColumnMap.get("crsDepTime")))));
         fd.setFlightId(new IntWritable(Integer.parseInt(d.get(csvColumnMap.get("flightId")))));
         fd.setCarrier(new Text(d.get(csvColumnMap.get("uniqueCarrier"))));
         fd.setOrigin(new Text(d.get(csvColumnMap.get("origin"))));
@@ -83,6 +84,11 @@ public class DataUtil {
       // Do Nothing
     }
     return fd;
+  }
+
+  private static int getHourOfDay(String crsDepTime) {
+    crsDepTime = StringUtils.leftPad(crsDepTime, 4, '0');
+    return Integer.parseInt(crsDepTime.substring(0,2));
   }
 
   private static FloatWritable getDelayMinutes(CSVRecord d, String actMinutes) {

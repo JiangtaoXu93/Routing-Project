@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -103,13 +106,14 @@ public class RouteComputeMapper extends
       String queryDate = query[0] + query[1] + query[2];
       String queryOrigin = query[3];
       String queryDes = query[4];
+      String queryNextDate = getNextDate(queryDate);
 
-      //Emit Test LegOne
       if (StringUtils.equals(queryDate, flightDate)) {
+        //Emit Test LegOne
         if (StringUtils.equals(queryOrigin, fd.getOrigin().toString())) {
           fd.setLegType(new IntWritable(1));
           RouteKey rk = new RouteKey(fd.getOrigin(), fd.getDest(), new Text(queryDes),
-              new IntWritable(2), new Text(flightDate));
+              new IntWritable(2), new Text(queryDate));
           context.write(rk, fd);
         }
 
@@ -117,16 +121,41 @@ public class RouteComputeMapper extends
         if (StringUtils.equals(queryDes, fd.getDest().toString())) {
           fd.setLegType(new IntWritable(2));
           RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
-              new IntWritable(2), new Text(flightDate));
+              new IntWritable(2), new Text(queryDate));
           context.write(rk, fd);
         }
       }
+
+      if (StringUtils.equals(queryNextDate, flightDate)) {
+        //Emit Test LegTwo
+        if (StringUtils.equals(queryDes, fd.getDest().toString())) {
+          fd.setLegType(new IntWritable(2));
+          RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
+              new IntWritable(2), new Text(queryDate));
+          context.write(rk, fd);
+        }
+      }
+
+    }
+  }
+
+  private String getNextDate(String dt) {
+    try {
+      String qDt = dt;
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+      Calendar c = Calendar.getInstance();
+      c.setTime(sdf.parse(dt));
+      c.add(Calendar.DATE, 1);  // number of days to add
+      dt = sdf.format(c.getTime());
+      return qDt;
+    } catch (ParseException pe) {
+      return dt;
     }
   }
 
   private void emitTrainData(Context context, FlightData fd)
       throws IOException, InterruptedException {
-   //TODO: Change (computeYear - 25) -> (computeYear - 5)
+    //TODO: Change (computeYear - 25) -> (computeYear - 5)
     if (fd.getYear().get() >= (computeYear - 25) && fd.getYear().get() < computeYear) {
       writeLegOneTrainFlight(context, fd);
       writeLegTwoTrainFlight(context, fd);
