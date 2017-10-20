@@ -11,12 +11,10 @@ import org.apache.hadoop.io.Text;
 import org.neu.data.FlightData;
 
 /**
- * DataUtil:check and get sanity data
  * @author Bhanu, Joyal, Jiangtao
  */
 public class DataUtil {
 
-  private static final int FLIGHT_DELAY_FACTOR = 4;
   private static final short MAX_FIELDS = 110;
   public static Map<String, Integer> csvColumnMap = new HashMap<>();
 
@@ -79,7 +77,8 @@ public class DataUtil {
         fd.setDepDelay(getDelayMinutes(d, "depDelayNew"));
         fd.setSchElapsedTime(new Text(d.get(csvColumnMap.get("crsElapsedTime"))));
         fd.setActElapsedTime(new Text(d.get(csvColumnMap.get("actualElapsedTime"))));
-        fd.setCancelled(new BooleanWritable(BooleanUtils.toBoolean(d.get(csvColumnMap.get("cancelled")))));
+        fd.setCancelled(
+            new BooleanWritable(BooleanUtils.toBoolean(d.get(csvColumnMap.get("cancelled")))));
       }
     } catch (NumberFormatException nfe) {
       // Do Nothing
@@ -89,7 +88,7 @@ public class DataUtil {
 
   private static int getHourOfDay(String crsDepTime) {
     crsDepTime = StringUtils.leftPad(crsDepTime, 4, '0');
-    return Integer.parseInt(crsDepTime.substring(0,2));
+    return Integer.parseInt(crsDepTime.substring(0, 2));
   }
 
   private static FloatWritable getDelayMinutes(CSVRecord d, String actMinutes) {

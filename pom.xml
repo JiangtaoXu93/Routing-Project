@@ -47,13 +47,6 @@
       </plugin>
     </plugins>
   </build>
-  <!--<repositories>
-    <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
-    </repository>
-  </repositories>-->
-
   <!-- Hadoop main client artifact -->
   <dependencies>
     <dependency>
@@ -87,33 +80,5 @@
       <artifactId>commons-lang3</artifactId>
       <version>3.6</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
-    <dependency>
-      <groupId>com.opencsv</groupId>
-      <artifactId>opencsv</artifactId>
-      <version>4.0</version>
-    </dependency>
-    <!--http://quickml.org/-->
-    <!--<dependency>
-      <groupId>com.github.sanity</groupId>
-      <artifactId>quickml</artifactId>
-      <version>0.10.9</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/quickml-10.16.jar</systemPath>
-    </dependency>-->
-    <!--WEKA-->
-    <!--<dependency>-->
-      <!--<groupId>nz.ac.waikato.cms.weka</groupId>-->
-      <!--<artifactId>weka-stable</artifactId>-->
-      <!--<version>${weka.version}</version>-->
-    <!--</dependency>-->
-    <!--JAVA-ML-->
-    <!--<dependency>
-      <groupId>net.sf</groupId>
-      <artifactId>javaml</artifactId>
-      <version>0.1.7</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/javaml-0.1.7.jar</systemPath>
-    </dependency>-->
   </dependencies>
 </project>

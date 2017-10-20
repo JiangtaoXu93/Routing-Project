@@ -41,9 +41,6 @@ public class RoutePrediction {
 	}
 
 
-	/**
-	 * Driver method to run the RouteComputeJob
-	 */
 	private static void runJobs(String[] args, Configuration conf, BenchmarkData bmd)
 			throws Exception {
 		int result;
@@ -63,11 +60,10 @@ public class RoutePrediction {
 		}
 		d2 = System.nanoTime();
 		bmd.setFlightDelayJob((double) ((d2 - d1) / 1000000));
-
 	}
 
 	/**
-	 * To clear the existed output file
+	 * Clear existed output files
 	 */
 	private static void cleanOutDir(String loc, Configuration conf) throws IOException {
 		Path outDirPath = new Path(loc);

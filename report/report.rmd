@@ -13,7 +13,7 @@ output:
 
 ```{r setup, include=FALSE,echo=FALSE,results='hide',message=FALSE, warning=FALSE, cache=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
-install.packages('e1071', dependencies=TRUE)
+# install.packages('e1071', dependencies=TRUE)
 library(ggplot2)
 library(gridExtra)
 library(dplyr)
@@ -25,12 +25,11 @@ library(data.table)
 library(kableExtra)
 library(randomForest)
 library(caret)
-library(compare)
 knitr::opts_knit$set(root.dir = normalizePath(getwd()))
 ```
 
 
-```{r warning=FALSE} 
+```{r, warning=FALSE, cache=TRUE} 
 #Load Data
 set.seed(3333)
 cols <- c("dataType","origin","hop","des","flightDate","l1.flightType","l1.year","l1.month","l1.dayOfWeek","l1.dayOfMonth","l1.hourOfDay","l1.flightId","l1.carrier","l1.origin","l1.dest","l1.schDepTime","l1.actDepTime","l1.schArrTime","l1.actArrTime","l1.arrDelay","l1.depDelay","l1.schElapsedTime","l1.actElapsedTime","l1.cancelled","l2.flightType","l2.year","l2.month","l2.dayOfWeek","l2.dayOfMonth","l2.hourOfDay","l2.flightId","l2.carrier","l2.origin","l2.dest","l2.schDepTime","l2.actDepTime","l2.schArrTime","l2.actArrTime","l2.arrDelay","l2.depDelay","l2.schElapsedTime","l2.actElapsedTime","l2.cancelled","label")
@@ -55,11 +54,12 @@ model.test.data <-  test.data[, model.feature.list, with=FALSE]
 model.train.data[,"label"] <-lapply(model.train.data[, "label", with=FALSE], factor)
 
 # Extracting and removing labels(0) from test set.
-model.test.label.actual = model.test.data[,"label"] 
+model.test.label.actual <- model.test.data[,"label"] 
+model.test.label.actual <- as.numeric(model.test.label.actual$label)
 model.test.data[, "label":=NULL]
 
 # Sampling Test Data to Random 5000 rows
-# model.train.data<-model.train.data[sample(nrow(model.train.data), 1000),]
+# model.train.data<-model.train.data[sample(nrow(model.train.data), 10000),]
 
 # Explore Transformed Test And Train Set
 dim(model.test.data)
@@ -79,13 +79,55 @@ model.knn <- train(label~., data = model.train.data, method = "knn"
 model.knn
 model.knn$finalModel
 model.test.label.predictions <- predict(model.knn, newdata=model.test.data)
-as.numeric(as.character(model.test.label.predictions))
+model.test.label.predictions <-as.numeric(model.test.label.predictions)
 model.test.label.actual
-# comparison <- compare(model.test.label.actual,model.test.label.predictions ,allowAll=TRUE)
-# comparison$tM
 model.test.label.predictions
-as.vector(model.test.label.actual)
 model.test.label.actual
-confusionMatrix(model.test.label.predictions, model.test.label.actual)
+model.test.cf <- confusionMatrix(model.test.label.predictions, model.test.label.actual)
+model.test.recall <- recall(factor(model.test.label.predictions), factor(model.test.label.actual))
+model.test.precision <- precision(factor(model.test.label.predictions), factor(model.test.label.actual))
+```
+### Plot for KNN Neighbors vs Accuracy
+```{r, warning=FALSE, cache=TRUE} 
+plot(model.knn)
+```
 
+### Plot for KNN Labels
+```{r, warning=FALSE, cache=TRUE} 
+# p <- ggplot(classify.results.sample, aes(logpr.a, logpr.b))
+# p + geom_point(aes(colour = factor(item.class))) + geom_abline(intercept=0, slope=1)
+
+```
+
+
+### Plot for KNN Confusion Matrix
+```{r, warning=FALSE, cache=TRUE} 
+model.test.cf
+fourfoldplot(model.test.cf$table)
+```
+
+### Scoring 
+```{r, warning=FALSE, cache=TRUE}
+# Scoring Final Valid Routes with label 2
+route.data <- test.data
+route.data$label <- model.test.label.predictions
+routes.valid <- route.data[label==2]
+routes.valid
+score.total <- 0
+score.total.count <- nrow(routes.valid)
+score.delay.count <-0
+score.nondelay.count <-0
+for (x in 1:nrow(routes.valid)){
+  if(routes.valid[x,"l1.arrDelay"]>0 || routes.valid[x,"l2.arrDelay"]>0){
+    score.total<-score.total-100
+    score.delay.count<-score.delay.count+1
+  }else{
+    score.total<-score.total+1
+    score.nondelay.count=score.nondelay.count+1
+  }
+}
+final.score<-data.frame(score.delay.count,score.nondelay.count,score.total.count,score.total)
+output.routes <- routes.valid[,c("flightDate","origin","des","l1.actDepTime","l1.actArrTime","l1.carrier","l1.origin","l1.dest","l2.actDepTime","l2.actArrTime","l2.carrier","l2.origin","l2.dest")]
+final.score
+output.routes
 ```

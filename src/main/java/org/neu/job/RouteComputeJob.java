@@ -2,7 +2,6 @@ package org.neu.job;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -17,9 +16,14 @@ import org.neu.mapper.RouteComputeMapper;
 import org.neu.reducer.RouteComputeReducer;
 
 /**
- * RouteComputeJob: Job class: output the training set, test set and validation set. The difference between 
- * test and validation set is that validation set contains the actual label of the test, which will be used to 
- * calculate the predicted accuracy.
+ * RouteComputeJob: Job class:
+ * Output:
+ * - Training Data Set : Used to train ML model. Has labels for routes/hops based on
+ *   Actual Arrival/Departure time at the hop
+ *
+ * - Test Data Set : Actual Routes for the Given Input Queries.
+ *   Contains labels to validate after prediction from the model. This give the accuracy of test set.
+ *
  * @author Bhanu, Joyal, Jiangtao
  */
 public class RouteComputeJob extends Configured implements Tool {
@@ -42,7 +46,6 @@ public class RouteComputeJob extends Configured implements Tool {
         RouteKey.class, RouteData.class);
 
     LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
-
 
     job.addCacheFile(new Path(args[1] + "/query.csv").toUri());//add query into cache
 
