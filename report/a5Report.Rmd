@@ -1,0 +1,235 @@
+---
+title: "A5 - Routing"
+author: "Jiangtao, Joyal and Bhanu"
+date: "October 20, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE,echo=FALSE,results='hide',message=FALSE, warning=FALSE, cache=TRUE}
+library(knitr)
+library(data.table)
+library(kableExtra)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+# Problem
+http://janvitek.org/pdpmr/f17/task-a5-routes.html
+
+# Solution
+
+## Architecture {#architecture}
+
+*Arrows head represent the data flow*
+
+## 1. RouteComputeJob
+The job takes as `input` the airline dataset from year 1987-2015 and `query` file and outputs three files namely `test.csv`,`train.csv` and `validate.csv`. Each of the file serves purposes as shown below:
+
+```{r, echo = FALSE,message=FALSE, warning=FALSE}
+fileDescDF <- read.csv("data/fileDesc.csv")
+kable_styling(kable(fileDescDF,"html"), bootstrap_options = "striped", full_width = F)
+```
+
+
+### 1a. RouteComputeMapper
+
+The mapper has the following instance members:
+
+```{r, echo = FALSE,message=FALSE, warning=FALSE}
+mapperVarDF <- read.csv("data/mapperVarDF.csv")
+kable_styling(kable(mapperVarDF,"html"),bootstrap_options = "striped", full_width = F)
+```
+
+#### Setup Phase
+Each mapper will have shared access to `queryList` instance member described above. In setup phase, the `queryList` is populated with each row tuple from input query file.
+Apart from this, the sdMap (source-destination map) and dsMap also gets populated. This is done as shown below:
+
+Assume that for a given query file we have following values:
+
+```{r, echo = FALSE,message=FALSE, warning=FALSE}
+sampleQueryDF <- read.csv("data/sampleQuery.csv")
+kable_styling(kable(sampleQueryDF,"html"), bootstrap_options = "striped", full_width = T)
+```        
+
+
+As shown in the above table, there are two unique source (`BOS` and `ATL`) and four unique destination for query (`SEA`,`ATL`,`JFK`,`FLO`).
+
+The sdMap will be populated with following key,value pairs
+
+```{r, echo = FALSE,message=FALSE, warning=FALSE}
+sdMap <- read.csv("data/sdMap.csv")
+kable_styling(kable(sdMap,"html"), bootstrap_options = "striped", full_width = F, position = "left")
+```
+
+The dsMap will be populated with following key,value pairs
+```{r, echo = FALSE,message=FALSE, warning=FALSE}
+dsMap <- read.csv("data/dsMap.csv")
+kable_styling(kable(dsMap,"html"), bootstrap_options = "striped", full_width = F, position = "left")
+```
+
+The main purpose of this job is to figure out a hop between source and destination. 
+
+The below procedure shows exactly how each map will be used to figure out a route.
+
+1. With the given query data, assume that in input we get a connection 'C' from 'BOS'.
+
+2. For each input we will check whether the source matches any of the key for sdMap. 
+   For example if the input has `BOS` as source then, according to map as `BOS` has 3 unique destinations, 
+   for each input, map will emit three set of keys:
+   
+    ```
+    <BOS-C-SEA>
+    <BOS-C-ATL>
+    <BOS-C-JFK>
+    ```
+   
+    The value for each of these keys will have a flag set to '1', indicating this is a route for **Leg 1**.
+    **C** is the current input data's destination value.
+
+3. For each input we will also check whether the destination matches any of the key for dsMap. 
+   For example if the input has `SEA` has destination then, according to map as `SEA` has one unique source,
+   map will emit following keys:
+   
+    ```
+    <BOS-C-SEA>
+    ```
+    
+    The value for each of these keys will have a flag set to '2', indicating this is a route for **Leg 2**.
+    **C** is the current input data's source value.
+
+4. In the reducer, we will then have a key and list of values where the values will be either of leg1 or leg2 for that route.
+
+#### Mapper Phase 
+
+The mapper reads each line from flight record csv file, cleans data as per given sanity rules and emits 2 kind of <key,value> pair. Given a year, it emits test data in that year
+and train data **not** in that year. The `key` is type of `RouteKey` class which implements `WritableComparable` interface while the `value` is type of `FlightData` class which implements `Writable` interface.
+
+```
+# RouteComputeMapper Input k,v
+LongWritable, Text
+# RouteComputeMapper Output k,v
+RouteKey, FlightData
+```
+
+#### RouteKey
+    
+The structure of `RouteKey` is as shown below:
+      
+```java
+public class RouteKey implements WritableComparable<RouteKey> {
+  private Text source;
+  private Text hop;
+  private Text destination;
+  private IntWritable type;//1-Train;2-Test
+  private Text date;//yyyyMMdd
+}
+```
+
+The mapper emits key of type `RouteKey` for both train and test dataset.
+
+The following are the differences between the implementation of mapper for train and test data.
+
+1. For train dataset the value for type would be **1**, while for test dataset the value for the type would be **2**.
+
+2. For **train** dataset, mapper emits leg1 and leg2 flight for a user configured value which is less than query year value.
+   For example, if the query year is `2001` and the user has specified `3` years for model generation, then the train dataset will contain
+   data for years **`{1998,1999,2000}`**.
+   
+   For **test** dataset, mapper emits leg1 and leg2 flight for query year value. So, in the above example, the test dataset will contain
+   data for year **`2001`** only.
+   
+3. There is one more implementation in the test phase. Suppose, for a given route A-C-B, where A is the source, C is the hop and B is the destination, if the    flight reaches C at 2330 hours for a given date, and the next flight from C to B is at 0030 for the next date, then below condition is specifically 
+   handled in the code.
+   
+   
+```java
+String queryNextDate = getNextDate(queryDate);
+ 
+if (StringUtils.equals(queryNextDate, flightDate)) {//if arrive at destination next day
+    //Emit Test LegTwo
+    if (StringUtils.equals(queryDes, fd.getDest().toString())) {
+      fd.setLegType(new IntWritable(2));
+      RouteKey rk = new RouteKey(new Text(queryOrigin), fd.getOrigin(), fd.getDest(),
+          new IntWritable(2), new Text(queryDate));
+      context.write(rk, fd);
+    }
+}
+```
+   
+   Here, for test data a new set of <key, value> pair will be emitted where the key will have date for next day. 
+
+#### FlightData
+
+The structure of `FlightData` is as shown below:
+
+```java
+public class FlightData implements Writable {
+  public static final String SEP_COMMA = ",";
+  /**
+   * LegType is the flight type in one complete route.
+   * If the route is A->C->B
+   * LegType=1 -> Flight A-C
+   * LegType=2 -> Flight C-B
+   */
+  private IntWritable legType;
+  private IntWritable year;//YEAR
+  private IntWritable month;//MONTH
+  private IntWritable dayOfWeek;//DAY_OFF_WEEK
+  private IntWritable dayOfMonth;//DAY_OF_MONTH
+  private IntWritable hourOfDay;//Computed from
+  private IntWritable flightId;//FL_NUM
+  private Text carrier;//UNIQUE_CARRIER
+  private Text origin;//ORIGIN
+  private Text dest;//DEST
+  private Text schDepTime;//CRS_DEP_TIME (local time: hhmm)
+  private Text actDepTime;//DEP_TIME (local time: hhmm)
+  private Text schArrTime;//CRS_ARR_TIME (local time: hhmm)
+  private Text actArrTime;//ARR_TIME (local time: hhmm)
+  private FloatWritable arrDelay;//NORMALISED_DELAY
+  private FloatWritable depDelay;//NORMALISED_DELAY
+  private Text schElapsedTime;//CRS_ELAPSED_TIME (hhmm)
+  private Text actElapsedTime;//ELAPSED_TIME (hhmm)
+  private BooleanWritable cancelled;////CANCELLED
+}
+```
+This class has its own getter and setter methods and stores value of each input csv record. There is also a special field `legType`, which takes either of
+two values: **`1`** or **`2`**, where **`1`** indicates flight data for **Leg1** journey and **`2`** indicates flight data for **Leg2** journey.
+
+### 1b. RouteComputeReducer
+
+The Reducer phase receives input and emits output in the following `<k,v>` format
+
+```
+# RouteComputeReducer Input k,v
+RouteKey, FlightData
+# RouteComputeReducer Output k,v
+RouteKey, RouteData
+```
+
+The reducer generates the training and testing data set and its implementation differs in the followings for both datasets.
+
+```
+ For Train
+ Input:
+  - Key: <RouteKey> With RouteKey.type = 1
+  - Iterator<FlightData>:  All LegOne and LegTwo Flights for given Key
+ 
+ Output: Emits every two hop route for the given key in the following format,
+  - Key : <RouteKey>
+  - Value: <RouteData> With RouteData.isValid as label, depending upon actual layover time at the hop.
+  (This label is used to train the model)
+```
+
+```
+ For Test
+ Input:
+  - Key: <RouteKey> With RouteKey.type = 2
+  - Iterator<FlightData>:  All LegOne and LegTwo Flights for given Key
+ 
+ Output: Emits every two hop route for the given key in the following format,
+  - Key : <RouteKey>
+  - Value: <RouteData> With RouteData.isValid as label, depending upon actual layover time at the hop.
+  (This label is only used to validate the predictions from the model)
+```
+
