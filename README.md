@@ -20,7 +20,7 @@ Used with Experiment 1 mentioned in the report
 
 ### Local
 
-####1. Prepare
+#### 1. Prepare
 
 1) Create your query with format: "YYYY, MM, DD, SOURCE_AIRPORT, DESTINATION_AIRPORT" (e.g. 2001, 09, 11, DEN, DCA). Put your queries in `query/query.csv`.
 
@@ -28,7 +28,7 @@ Used with Experiment 1 mentioned in the report
 
 3) Modify `HADOOP_HOME` and `HADOOP_VERSION` in `Makefile` to your hadoop home and version.
 
-####2. Run 
+#### 2. Run 
 
 - Goto `<project-root>`
 - Run `make`
