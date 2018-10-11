@@ -1,6 +1,6 @@
-# A5 – Routing
+# Routing Project
 
-Giving historical airplane on time performance data, you will offer suggestions for two-hop flights that minimize the chance of missing a connection.
+Giving historical airplane on time performance data, offer suggestions for two-hop flights that minimize the chance of missing a connection.
 
 ## Code Structure
 
